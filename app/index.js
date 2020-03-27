@@ -3,6 +3,7 @@ const AWS = require('aws-sdk');
 const _ = require('lodash');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
 
 // NODE_ENV is either `production` or `staging`
 const { NODE_ENV, PORT } = process.env;
@@ -81,6 +82,38 @@ async function createOTP(contactNumber) {
   }
 }
 
+async function checkOtpValidity(contactNumber, keyedInOtp) {
+  const params = {
+    TableName: HOMER_OTP_TABLE,
+    Key: {
+      contact_number: contactNumber,
+    },
+  };
+
+  try {
+    const { Item: otpItem } = await docClient.get(params).promise();
+    // If entry doesn't exist
+    if (_.isEmpty(otpItem)) {
+      return false;
+    }
+
+    const keyedInOtpHash = bcrypt.hashSync(keyedInOtp, otpItem.salt);
+    if (keyedInOtpHash !== otpItem.hashed_otp) {
+      return false;
+    }
+
+    // check that it's within 15 minutes since OTP was generated
+    const currentTime = new Date().getTime();
+    if ((currentTime - otpItem.updated_time) / 1000 / 60 > 15) {
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    throw new Error(`Error finding OTP in ${HOMER_OTP_TABLE}: ${error.message}`);
+  }
+}
+
 app.post('/otp', async (req, res) => {
   const { contactNumber } = req.body;
   // 1. Check if user exists in user tables
@@ -100,6 +133,28 @@ app.post('/otp', async (req, res) => {
   }
 
   // TODO send SMS of OTP
+});
+
+app.post('/otp/verify', async (req, res) => {
+  const { contactNumber, otp } = req.body;
+  try {
+    const isValidOtp = await checkOtpValidity(contactNumber, otp);
+    if (!isValidOtp) {
+      res.status(400).send('Invalid OTP');
+      return;
+    }
+
+    // Issue JWT with contact number
+    res.status(200).json({
+      token: jwt.sign(
+        { contactNumber: '9238138' },
+        TOKEN_SIGNING_KEY,
+        { expiresIn: '21 days' },
+      ),
+    });
+  } catch (error) {
+    console.log(error);
+  }
 });
 
 app.post('/location', (req, res) => {
