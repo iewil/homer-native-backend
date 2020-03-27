@@ -6,11 +6,13 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 
 // NODE_ENV is either `production` or `staging`
-const { NODE_ENV, PORT } = process.env;
+const { NODE_ENV, PORT, TOKEN_SIGNING_KEY } = process.env;
 
 const app = express();
 app.use(express.json());
 
+// Middlewares
+const auth = require('./middlewares/auth');
 
 // OTP crypto
 const SALT_ROUNDS = 10;
@@ -144,10 +146,11 @@ app.post('/otp/verify', async (req, res) => {
       return;
     }
 
+    // TODO invalidate OTP
     // Issue JWT with contact number
     res.status(200).json({
       token: jwt.sign(
-        { contactNumber: '9238138' },
+        { contactNumber },
         TOKEN_SIGNING_KEY,
         { expiresIn: '21 days' },
       ),
@@ -157,8 +160,8 @@ app.post('/otp/verify', async (req, res) => {
   }
 });
 
-app.post('/location', (req, res) => {
-  res.send('Ok');
+app.post('/location', auth, (req, res) => {
+  res.status(200).send('Ok');
 });
 
 app.listen(PORT, () => console.log(`Native Homer backend app listening on port ${PORT}`));
