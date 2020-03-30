@@ -5,8 +5,7 @@ const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 
-// NODE_ENV is either `production` or `staging`
-const { NODE_ENV, PORT, TOKEN_SIGNING_KEY } = process.env;
+const { TABLE_ENV, PORT, TOKEN_SIGNING_KEY } = process.env;
 
 const app = express();
 app.use(express.json());
@@ -32,7 +31,7 @@ async function findUser(contactNumber) {
   // TODO we can actually use `transactGet` instead - https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB/DocumentClient.html#transactGet-property
   for (let i = 0; i < homerAgencies.length; i += 1) {
     const agency = homerAgencies[i];
-    const userTable = `${agency}-users-${NODE_ENV}`;
+    const userTable = `${agency}-users-${TABLE_ENV}`;
     const params = {
       TableName: userTable,
       Key: {
