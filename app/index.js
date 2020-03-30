@@ -59,7 +59,7 @@ async function createOTP(contactNumber) {
 
   // TODO added this log so that I can see the OTP and test if verification works
   // hide the OTP when it goes into prod
-  console.log('created OTP', otp, ' for contact: ', contactNumber);
+  console.log('created OTP', otp, 'for contact: ', contactNumber);
   // 2. Save OTP
   const salt = bcrypt.genSaltSync(SALT_ROUNDS);
   const hashedOtp = bcrypt.hashSync(otp, salt);
@@ -70,11 +70,12 @@ async function createOTP(contactNumber) {
     Key: {
       contact_number: contactNumber,
     },
-    UpdateExpression: 'set updated_time = :updatedTime, hashed_otp = :hashedOtp, salt = :salt',
+    UpdateExpression: 'set updated_time = :updatedTime, hashed_otp = :hashedOtp, salt = :salt, has_been_used = :hasBeenUsed',
     ExpressionAttributeValues: {
       ':hashedOtp': hashedOtp,
       ':updatedTime': new Date().getTime(),
       ':salt': salt,
+      ':hasBeenUsed': false,
     },
   };
 
@@ -100,6 +101,10 @@ async function checkOtpValidity(contactNumber, keyedInOtp) {
       return false;
     }
 
+    if (otpItem.has_been_used) {
+      return false;
+    }
+
     const keyedInOtpHash = bcrypt.hashSync(keyedInOtp, otpItem.salt);
     if (keyedInOtpHash !== otpItem.hashed_otp) {
       return false;
@@ -114,6 +119,27 @@ async function checkOtpValidity(contactNumber, keyedInOtp) {
     return true;
   } catch (error) {
     throw new Error(`Error finding OTP in ${HOMER_OTP_TABLE}: ${error.message}`);
+  }
+}
+
+async function invalidateOtp(contactNumber) {
+  const updateParams = {
+    TableName: HOMER_OTP_TABLE,
+    Key: {
+      contact_number: contactNumber,
+    },
+    UpdateExpression: 'set updated_time = :updatedTime, has_been_used = :hasBeenUsed',
+    ExpressionAttributeValues: {
+      ':updatedTime': new Date().getTime(),
+      ':hasBeenUsed': true,
+    },
+  };
+
+  try {
+    await docClient.update(updateParams).promise();
+    console.log(`OTP for ${contactNumber} invalidated`);
+  } catch (error) {
+    console.log(`Error invalidating ${contactNumber}'s OTP: ${error}`);
   }
 }
 
@@ -147,7 +173,9 @@ app.post('/otp/verify', async (req, res) => {
       return;
     }
 
-    // TODO invalidate OTP
+    // invalidate OTP
+    await invalidateOtp(contactNumber);
+
     // Issue JWT with contact number
     res.status(200).json({
       token: jwt.sign(
