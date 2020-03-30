@@ -2,8 +2,8 @@ const express = require('express');
 const AWS = require('aws-sdk');
 const _ = require('lodash');
 const bcrypt = require('bcrypt');
-const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
+const OTPManager = require('./helpers/otp');
 
 const { TABLE_ENV, PORT, TOKEN_SIGNING_KEY } = process.env;
 
@@ -12,9 +12,6 @@ app.use(express.json());
 
 // Middlewares
 const auth = require('./middlewares/auth');
-
-// OTP crypto
-const SALT_ROUNDS = 10;
 
 // DynamoDB constants
 const HOMER_OTP_TABLE = 'homer-native-otp';
@@ -48,99 +45,6 @@ async function findUser(contactNumber) {
   return null;
 }
 
-async function createOTP(contactNumber) {
-  // 1. Create OTP
-  let otp;
-  do {
-    otp = crypto.randomBytes(3).toString('hex');
-  }
-  while (otp.match(/[a-z]/i));
-
-  // TODO added this log so that I can see the OTP and test if verification works
-  // hide the OTP when it goes into prod
-  console.log('created OTP', otp, 'for contact: ', contactNumber);
-  // 2. Save OTP
-  const salt = bcrypt.genSaltSync(SALT_ROUNDS);
-  const hashedOtp = bcrypt.hashSync(otp, salt);
-
-  // 2.2 Create/Update OTP entry
-  const updateParams = {
-    TableName: HOMER_OTP_TABLE,
-    Key: {
-      contact_number: contactNumber,
-    },
-    UpdateExpression: 'set updated_time = :updatedTime, hashed_otp = :hashedOtp, salt = :salt, has_been_used = :hasBeenUsed',
-    ExpressionAttributeValues: {
-      ':hashedOtp': hashedOtp,
-      ':updatedTime': new Date().getTime(),
-      ':salt': salt,
-      ':hasBeenUsed': false,
-    },
-  };
-
-  try {
-    await docClient.update(updateParams).promise();
-  } catch (error) {
-    throw new Error(`Error saving OTP to ${HOMER_OTP_TABLE}: ${error.message}`);
-  }
-}
-
-async function checkOtpValidity(contactNumber, keyedInOtp) {
-  const params = {
-    TableName: HOMER_OTP_TABLE,
-    Key: {
-      contact_number: contactNumber,
-    },
-  };
-
-  try {
-    const { Item: otpItem } = await docClient.get(params).promise();
-    // If entry doesn't exist
-    if (_.isEmpty(otpItem)) {
-      return false;
-    }
-
-    if (otpItem.has_been_used) {
-      return false;
-    }
-
-    const keyedInOtpHash = bcrypt.hashSync(keyedInOtp, otpItem.salt);
-    if (keyedInOtpHash !== otpItem.hashed_otp) {
-      return false;
-    }
-
-    // check that it's within 15 minutes since OTP was generated
-    const currentTime = new Date().getTime();
-    if ((currentTime - otpItem.updated_time) / 1000 / 60 > 15) {
-      return false;
-    }
-
-    return true;
-  } catch (error) {
-    throw new Error(`Error finding OTP in ${HOMER_OTP_TABLE}: ${error.message}`);
-  }
-}
-
-async function invalidateOtp(contactNumber) {
-  const updateParams = {
-    TableName: HOMER_OTP_TABLE,
-    Key: {
-      contact_number: contactNumber,
-    },
-    UpdateExpression: 'set updated_time = :updatedTime, has_been_used = :hasBeenUsed',
-    ExpressionAttributeValues: {
-      ':updatedTime': new Date().getTime(),
-      ':hasBeenUsed': true,
-    },
-  };
-
-  try {
-    await docClient.update(updateParams).promise();
-    console.log(`OTP for ${contactNumber} invalidated`);
-  } catch (error) {
-    console.log(`Error invalidating ${contactNumber}'s OTP: ${error}`);
-  }
-}
 /**
  * @api {post} /otp Create OTP for user
  * @apiVersion 0.1.0
@@ -166,7 +70,7 @@ app.post('/otp', async (req, res) => {
 
   // 2. Create entry with OTP Hash [number, agency, otp, time]
   try {
-    await createOTP(user.contactNumber);
+    await OTPManager.createOTP(user.contactNumber);
     res.status(200).send('OTP successfully created');
   } catch (error) {
     console.log(error);
@@ -194,7 +98,7 @@ app.post('/otp', async (req, res) => {
 app.post('/otp/verify', async (req, res) => {
   const { contactNumber, otp } = req.body;
   try {
-    const isValidOtp = await checkOtpValidity(contactNumber, otp);
+    const isValidOtp = await OTPManager.checkOtpValidity(contactNumber, otp);
     // TODO give detailed error as to why otp was invalid
     if (!isValidOtp) {
       res.status(400).send('Invalid OTP');
@@ -202,7 +106,7 @@ app.post('/otp/verify', async (req, res) => {
     }
 
     // invalidate OTP
-    await invalidateOtp(contactNumber);
+    await OTPManager.invalidateOtp(contactNumber);
 
     // Issue JWT with contact number
     res.status(200).json({
