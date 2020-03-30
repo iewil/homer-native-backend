@@ -19,6 +19,7 @@ const SALT_ROUNDS = 10;
 
 // DynamoDB constants
 const HOMER_OTP_TABLE = 'homer-native-otp';
+const HOMER_LOCATIONS_TABLE = 'homer-native-location';
 const AWS_REGION_NAME = 'ap-southeast-1';
 AWS.config.update({ region: AWS_REGION_NAME });
 const docClient = new AWS.DynamoDB.DocumentClient();
@@ -160,8 +161,23 @@ app.post('/otp/verify', async (req, res) => {
   }
 });
 
-app.post('/location', auth, (req, res) => {
-  res.status(200).send('Ok');
+app.post('/location', auth, async (req, res) => {
+  const { longitude, latitude, accuracy } = req.body;
+  const { contactNumber } = req.user;
+  const putParams = {
+    Item: {
+      contact_number: contactNumber,
+      submitted_time: new Date().getTime(),
+      data: { longitude, latitude, accuracy },
+    },
+    TableName: HOMER_LOCATIONS_TABLE,
+  };
+  try {
+    await docClient.put(putParams).promise();
+    res.status(200).send('Location submitted');
+  } catch (error) {
+    console.log(`Error submitting ${contactNumber}'s location: ${error.message}`);
+  }
 });
 
 app.listen(PORT, () => console.log(`Native Homer backend app listening on port ${PORT}`));
