@@ -78,8 +78,8 @@ app.post('/otp/verify', withErrorHandler(async (req, res) => {
  * @api {post} /location Submit user's location
  * @apiVersion 0.1.0
  * @apiGroup Location
- * @apiParam {String} longitude       User's longitude position
- * @apiParam {String} latitude        User's latitude position
+ * @apiParam {Number} longitude       User's longitude position
+ * @apiParam {Number} latitude        User's latitude position
  * @apiParam {Number} accuracy        position accuracy (in terms of m)
  *
  * @apiHeader {String} authorization  User's JWT
