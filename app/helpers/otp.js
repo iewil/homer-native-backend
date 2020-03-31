@@ -3,6 +3,15 @@ const crypto = require('crypto');
 const AWS = require('aws-sdk');
 const _ = require('lodash');
 
+// Error imports
+const {
+  OTPSavingError,
+  OTPNotFoundError,
+  OTPHasBeenUsedError,
+  OTPExpiredError,
+  OTPInvalidError,
+  OTPInvalidatingError,
+} = require('../errors/OtpErrors');
 // OTP crypto
 const SALT_ROUNDS = 10;
 
@@ -44,7 +53,8 @@ async function createOTP(contactNumber) {
   try {
     await docClient.update(updateParams).promise();
   } catch (error) {
-    throw new Error(`Error saving OTP to ${HOMER_OTP_TABLE}: ${error.message}`);
+    console.log('Error saving OTP', error);
+    throw new OTPSavingError(contactNumber);
   }
 }
 
@@ -60,22 +70,22 @@ async function checkOtpValidity(contactNumber, keyedInOtp) {
     const { Item: otpItem } = await docClient.get(params).promise();
     // If entry doesn't exist
     if (_.isEmpty(otpItem)) {
-      return false;
+      throw new OTPNotFoundError(contactNumber);
     }
 
     if (otpItem.has_been_used) {
-      return false;
+      throw new OTPHasBeenUsedError(contactNumber);
     }
 
     const keyedInOtpHash = bcrypt.hashSync(keyedInOtp, otpItem.salt);
     if (keyedInOtpHash !== otpItem.hashed_otp) {
-      return false;
+      throw new OTPInvalidError(contactNumber);
     }
 
     // check that it's within 15 minutes since OTP was generated
     const currentTime = new Date().getTime();
     if ((currentTime - otpItem.updated_time) / 1000 / 60 > 15) {
-      return false;
+      throw new OTPExpiredError(contactNumber);
     }
 
     return true;
@@ -102,7 +112,7 @@ async function invalidateOtp(contactNumber) {
     await docClient.update(updateParams).promise();
     console.log(`OTP for ${contactNumber} invalidated`);
   } catch (error) {
-    console.log(`Error invalidating ${contactNumber}'s OTP: ${error}`);
+    throw new OTPInvalidatingError(contactNumber);
   }
 }
 

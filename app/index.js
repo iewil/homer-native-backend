@@ -1,11 +1,10 @@
 const express = require('express');
 const AWS = require('aws-sdk');
-const _ = require('lodash');
-const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const OTPManager = require('./helpers/otp');
+const UserHelper = require('./helpers/user');
 
-const { TABLE_ENV, PORT, TOKEN_SIGNING_KEY } = process.env;
+const { PORT, TOKEN_SIGNING_KEY } = process.env;
 
 const app = express();
 app.use(express.json());
@@ -14,37 +13,16 @@ app.use(express.json());
 const auth = require('./middlewares/auth');
 
 // DynamoDB constants
-const HOMER_OTP_TABLE = 'homer-native-otp';
 const HOMER_LOCATIONS_TABLE = 'homer-native-location';
 const AWS_REGION_NAME = 'ap-southeast-1';
 AWS.config.update({ region: AWS_REGION_NAME });
 const docClient = new AWS.DynamoDB.DocumentClient();
 
-// Agencies
-const homerAgencies = ['mom-sho', 'ica-homer', 'moe-homer', 'mom-dloa', 'mom-fdw', 'mom-sho', 'homer'];
-
-async function findUser(contactNumber) {
-  // Searches the contact number in every agency's user table
-  // TODO we can actually use `transactGet` instead - https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB/DocumentClient.html#transactGet-property
-  for (let i = 0; i < homerAgencies.length; i += 1) {
-    const agency = homerAgencies[i];
-    const userTable = `${agency}-users-${TABLE_ENV}`;
-    const params = {
-      TableName: userTable,
-      Key: {
-        contact_number: contactNumber,
-      },
-    };
-    try {
-      const result = await docClient.get(params).promise();
-      if (!_.isEmpty(result)) return { contactNumber, agency };
-    } catch (error) {
-      console.log(`Error finding ${contactNumber} in ${userTable}: ${error.message}`);
-    }
-  }
-  return null;
-}
-
+// This wraps around request handlers so that any error
+// is passed on to the general error handler
+const withErrorHandler = (func) => (res, req, next) => {
+  func(res, req).catch(next);
+};
 /**
  * @api {post} /otp Create OTP for user
  * @apiVersion 0.1.0
@@ -59,26 +37,16 @@ async function findUser(contactNumber) {
  * HTTP/1.1 404 Not Found
  * Number not found
  */
-app.post('/otp', async (req, res) => {
+app.post('/otp', withErrorHandler(async (req, res) => {
   const { contactNumber } = req.body;
   // 1. Check if user exists in user tables
-  const user = await findUser(contactNumber);
-  if (!user) {
-    res.status(404).send('Number not found');
-    return;
-  }
+  const user = await UserHelper.findUser(contactNumber);
 
   // 2. Create entry with OTP Hash [number, agency, otp, time]
-  try {
-    await OTPManager.createOTP(user.contactNumber);
-    res.status(200).send('OTP successfully created');
-  } catch (error) {
-    console.log(error);
-    res.status(500).send('Error saving OTP');
-  }
-
+  await OTPManager.createOTP(user.contactNumber);
+  res.status(200).send('OTP successfully created');
   // TODO send SMS of OTP
-});
+}));
 
 /**
  * @api {post} /otp/verify Verify user's OTP
@@ -95,31 +63,22 @@ app.post('/otp', async (req, res) => {
  *      "token" : "eyJhbdQssw5c...sadjaksd123j1lkj98c87a4ag20b8621nour978"
  *    }
  */
-app.post('/otp/verify', async (req, res) => {
+app.post('/otp/verify', withErrorHandler(async (req, res) => {
   const { contactNumber, otp } = req.body;
-  try {
-    const isValidOtp = await OTPManager.checkOtpValidity(contactNumber, otp);
-    // TODO give detailed error as to why otp was invalid
-    if (!isValidOtp) {
-      res.status(400).send('Invalid OTP');
-      return;
-    }
+  await OTPManager.checkOtpValidity(contactNumber, otp);
 
-    // invalidate OTP
-    await OTPManager.invalidateOtp(contactNumber);
+  // invalidate OTP
+  await OTPManager.invalidateOtp(contactNumber);
 
-    // Issue JWT with contact number
-    res.status(200).json({
-      token: jwt.sign(
-        { contactNumber },
-        TOKEN_SIGNING_KEY,
-        { expiresIn: '21 days' },
-      ),
-    });
-  } catch (error) {
-    console.log(error);
-  }
-});
+  // Issue JWT with contact number
+  res.status(200).json({
+    token: jwt.sign(
+      { contactNumber },
+      TOKEN_SIGNING_KEY,
+      { expiresIn: '21 days' },
+    ),
+  });
+}));
 
 /**
  * @api {post} /location Submit user's location
@@ -139,7 +98,7 @@ app.post('/otp/verify', async (req, res) => {
  *  HTTP/1.1 200 OK
  *  Location submitted
  */
-app.post('/location', auth, async (req, res) => {
+app.post('/location', auth, withErrorHandler(async (req, res) => {
   const { longitude, latitude, accuracy } = req.body;
   const { contactNumber } = req.user;
   const putParams = {
@@ -154,8 +113,25 @@ app.post('/location', auth, async (req, res) => {
     await docClient.put(putParams).promise();
     res.status(200).send('Location submitted');
   } catch (error) {
-    res.status(500).send('Location submitted');
     console.log(`Error submitting ${contactNumber}'s location: ${error.message}`);
+  }
+}));
+
+const ApplicationError = require('./errors/BaseError');
+
+app.use(async (err, req, res, next) => {
+  if (err instanceof ApplicationError) {
+    console.log(err.name, err.message);
+    res.status(err.status).json({
+      error: err.name,
+      message: err.message,
+    });
+  } else {
+    console.log('Unaccounted error: ', err.stack);
+    res.status(500).json({
+      error: 'Unexpected Server Error',
+      message: 'An Unexpected error has occured',
+    });
   }
 });
 
