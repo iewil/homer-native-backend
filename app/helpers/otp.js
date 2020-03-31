@@ -66,32 +66,27 @@ async function checkOtpValidity(contactNumber, keyedInOtp) {
     },
   };
 
-  try {
-    const { Item: otpItem } = await docClient.get(params).promise();
-    // If entry doesn't exist
-    if (_.isEmpty(otpItem)) {
-      throw new OTPNotFoundError(contactNumber);
-    }
-
-    if (otpItem.has_been_used) {
-      throw new OTPHasBeenUsedError(contactNumber);
-    }
-
-    const keyedInOtpHash = bcrypt.hashSync(keyedInOtp, otpItem.salt);
-    if (keyedInOtpHash !== otpItem.hashed_otp) {
-      throw new OTPInvalidError(contactNumber);
-    }
-
-    // check that it's within 15 minutes since OTP was generated
-    const currentTime = new Date().getTime();
-    if ((currentTime - otpItem.updated_time) / 1000 / 60 > 15) {
-      throw new OTPExpiredError(contactNumber);
-    }
-
-    return true;
-  } catch (error) {
-    throw new Error(`Error finding OTP in ${HOMER_OTP_TABLE}: ${error.message}`);
+  const { Item: otpItem } = await docClient.get(params).promise();
+  // If entry doesn't exist
+  if (_.isEmpty(otpItem)) {
+    throw new OTPNotFoundError(contactNumber);
   }
+  // Check that it's within 15 minutes since OTP was generated
+  const currentTime = new Date().getTime();
+  if ((currentTime - otpItem.updated_time) / 1000 / 60 > 15) {
+    throw new OTPExpiredError(contactNumber);
+  }
+
+  const keyedInOtpHash = bcrypt.hashSync(keyedInOtp, otpItem.salt);
+  if (keyedInOtpHash !== otpItem.hashed_otp) {
+    throw new OTPInvalidError(contactNumber);
+  }
+
+  if (otpItem.has_been_used) {
+    throw new OTPHasBeenUsedError(contactNumber);
+  }
+
+  return true;
 }
 
 
