@@ -1,8 +1,8 @@
 const express = require('express');
-const AWS = require('aws-sdk');
 const jwt = require('jsonwebtoken');
 const OTPManager = require('./helpers/otp');
 const UserHelper = require('./helpers/user');
+const LocationManager = require('./helpers/location');
 
 const { PORT, TOKEN_SIGNING_KEY } = process.env;
 
@@ -11,12 +11,6 @@ app.use(express.json());
 
 // Middlewares
 const auth = require('./middlewares/auth');
-
-// DynamoDB constants
-const HOMER_LOCATIONS_TABLE = 'homer-native-location';
-const AWS_REGION_NAME = 'ap-southeast-1';
-AWS.config.update({ region: AWS_REGION_NAME });
-const docClient = new AWS.DynamoDB.DocumentClient();
 
 // This wraps around request handlers so that any error
 // is passed on to the general error handler
@@ -101,20 +95,11 @@ app.post('/otp/verify', withErrorHandler(async (req, res) => {
 app.post('/location', auth, withErrorHandler(async (req, res) => {
   const { longitude, latitude, accuracy } = req.body;
   const { contactNumber } = req.user;
-  const putParams = {
-    Item: {
-      contact_number: contactNumber,
-      submitted_time: new Date().getTime(),
-      data: { longitude, latitude, accuracy },
-    },
-    TableName: HOMER_LOCATIONS_TABLE,
-  };
-  try {
-    await docClient.put(putParams).promise();
-    res.status(200).send('Location submitted');
-  } catch (error) {
-    console.log(`Error submitting ${contactNumber}'s location: ${error.message}`);
-  }
+  await LocationManager.saveLocation({
+    longitude, latitude, accuracy, contactNumber,
+  });
+
+  res.status(200).send('Location submitted');
 }));
 
 const ApplicationError = require('./errors/BaseError');
