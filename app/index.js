@@ -19,7 +19,7 @@ const withErrorHandler = (func) => (res, req, next) => {
 };
 /**
  * @api {post} /otp Create OTP for user
- * @apiVersion 0.1.0
+ * @apiVersion 0.1.1
  * @apiGroup OTP
  * @apiParam {String} contactNumber     User's contact number
  *
@@ -44,11 +44,11 @@ app.post('/otp', withErrorHandler(async (req, res) => {
 
 /**
  * @api {post} /otp/verify Verify user's OTP
- * @apiVersion 0.1.0
+ * @apiVersion 0.1.1
  * @apiGroup OTP
- * @apiName Hello
- * @apiParam {String} contactNumber     User's contact number
- * @apiParam {String} otp               Keyed in OTP
+ * @apiParam {String} contactNumber         User's contact number
+ * @apiParam {String} otp                   Keyed in OTP
+ * @apiParam {String} pushNotificationToken Device generated push notification token (FCM/APN)
  *
  * @apiSuccess {Object} token     User's session token which has their `contactNumber` in the payload (JWT)
  * @apiSuccessExample {json} Success-Reponse:
@@ -85,7 +85,7 @@ app.post('/otp/verify', withErrorHandler(async (req, res) => {
 
 /**
  * @api {post} /location Submit user's location
- * @apiVersion 0.1.0
+ * @apiVersion 0.1.1
  * @apiGroup Location
  * @apiParam {Number} longitude       User's longitude position
  * @apiParam {Number} latitude        User's latitude position
