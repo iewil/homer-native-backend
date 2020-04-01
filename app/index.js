@@ -58,12 +58,21 @@ app.post('/otp', withErrorHandler(async (req, res) => {
  *    }
  */
 app.post('/otp/verify', withErrorHandler(async (req, res) => {
-  const { contactNumber, otp } = req.body;
+  const { contactNumber, otp, pushNotificationToken } = req.body;
   await OTPManager.checkOtpValidity(contactNumber, otp);
 
   // invalidate OTP
   await OTPManager.invalidateOtp(contactNumber);
 
+  const { agency } = await UserHelper.findUser(contactNumber);
+
+  // Since users are scattered across multiple tables without any other data other than their number
+  // we need a centralised table to identify them quickly (i.e gov agency they're associated to)
+  // and store their notification token as well, so that we can
+  // send push notifications to get them to submit their location
+  await UserHelper.registerUser({ contactNumber, agency, pushNotificationToken });
+
+  console.log(`Issued JWT for ${contactNumber}`);
   // Issue JWT with contact number
   res.status(200).json({
     token: jwt.sign(
