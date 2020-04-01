@@ -28,7 +28,7 @@ async function findUser(contactNumber) {
       const result = await docClient.get(params).promise();
       if (!_.isEmpty(result)) {
         if (agency === 'homer-native') {
-          return { contactNumber, agency: result.agency };
+          return { contactNumber, agency: result.Item.agency };
         }
         return { contactNumber, agency };
       }
@@ -59,7 +59,7 @@ async function registerUser({ contactNumber, agency, pushNotificationToken }) {
   try {
     await docClient.update(updateParams).promise();
   } catch (error) {
-    throw new Error(`Error updating user: ${error}\n Update params: ${updateParams}`);
+    throw new Error(`Error registering user: ${error}\n Update params: ${JSON.stringify(updateParams)}`);
   }
 }
 
