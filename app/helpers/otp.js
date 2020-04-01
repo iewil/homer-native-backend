@@ -107,6 +107,7 @@ async function invalidateOtp(contactNumber) {
     await docClient.update(updateParams).promise();
     console.log(`OTP for ${contactNumber} invalidated`);
   } catch (error) {
+    console.log(`Error invalidating OTP: ${error}\nupdateParams: ${updateParams}`);
     throw new OTPInvalidatingError(contactNumber);
   }
 }
