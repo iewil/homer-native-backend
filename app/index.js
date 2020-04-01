@@ -33,11 +33,14 @@ const withErrorHandler = (func) => (res, req, next) => {
  */
 app.post('/otp', withErrorHandler(async (req, res) => {
   const { contactNumber } = req.body;
+  console.group(`Creating ${contactNumber} OTP`);
   // 1. Check if user exists in user tables
   const user = await UserHelper.findUser(contactNumber);
 
   // 2. Create entry with OTP Hash [number, agency, otp, time]
   await OTPManager.createOTP(user.contactNumber);
+  console.log('OTP successfully created');
+  console.groupEnd();
   res.status(200).send('OTP successfully created');
   // TODO send SMS of OTP
 }));
@@ -59,6 +62,7 @@ app.post('/otp', withErrorHandler(async (req, res) => {
  */
 app.post('/otp/verify', withErrorHandler(async (req, res) => {
   const { contactNumber, otp, pushNotificationToken } = req.body;
+  console.group(`Verify ${contactNumber}'s OTP`);
   await OTPManager.checkOtpValidity(contactNumber, otp);
 
   // invalidate OTP
@@ -73,6 +77,7 @@ app.post('/otp/verify', withErrorHandler(async (req, res) => {
   await UserHelper.registerUser({ contactNumber, agency, pushNotificationToken });
 
   console.log(`Issued JWT for ${contactNumber}`);
+  console.groupEnd();
   // Issue JWT with contact number
   res.status(200).json({
     token: jwt.sign(
@@ -104,10 +109,12 @@ app.post('/otp/verify', withErrorHandler(async (req, res) => {
 app.post('/location', auth, withErrorHandler(async (req, res) => {
   const { longitude, latitude, accuracy } = req.body;
   const { contactNumber } = req.user;
+  console.group(`Saving ${contactNumber}'s location`);
   await LocationManager.saveLocation({
     longitude, latitude, accuracy, contactNumber,
   });
-
+  console.log('Successfully saved');
+  console.groupEnd();
   res.status(200).send('Location submitted');
 }));
 
@@ -127,6 +134,7 @@ app.use(async (err, req, res, next) => {
       message: 'An Unexpected error has occured',
     });
   }
+  console.groupEnd();
 });
 
 app.listen(PORT, () => console.log(`Native Homer backend app listening on port ${PORT}`));
