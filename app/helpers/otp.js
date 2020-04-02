@@ -3,6 +3,8 @@ const crypto = require('crypto');
 const AWS = require('aws-sdk');
 const _ = require('lodash');
 
+const { HOMER_NATIVE_OTP_TABLE } = require('../db');
+
 // Error imports
 const {
   OTPSavingError,
@@ -15,7 +17,6 @@ const {
 // OTP crypto
 const SALT_ROUNDS = 10;
 
-const HOMER_OTP_TABLE = 'homer-native-otp';
 const AWS_REGION_NAME = 'ap-southeast-1';
 AWS.config.update({ region: AWS_REGION_NAME });
 const docClient = new AWS.DynamoDB.DocumentClient();
@@ -37,7 +38,7 @@ async function createOTP(contactNumber) {
 
   // 2.2 Create/Update OTP entry
   const updateParams = {
-    TableName: HOMER_OTP_TABLE,
+    TableName: HOMER_NATIVE_OTP_TABLE,
     Key: {
       contact_number: contactNumber,
     },
@@ -60,7 +61,7 @@ async function createOTP(contactNumber) {
 
 async function checkOtpValidity(contactNumber, keyedInOtp) {
   const params = {
-    TableName: HOMER_OTP_TABLE,
+    TableName: HOMER_NATIVE_OTP_TABLE,
     Key: {
       contact_number: contactNumber,
     },
@@ -92,7 +93,7 @@ async function checkOtpValidity(contactNumber, keyedInOtp) {
 
 async function invalidateOtp(contactNumber) {
   const updateParams = {
-    TableName: HOMER_OTP_TABLE,
+    TableName: HOMER_NATIVE_OTP_TABLE,
     Key: {
       contact_number: contactNumber,
     },

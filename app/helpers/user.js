@@ -1,6 +1,7 @@
 const AWS = require('aws-sdk');
 const _ = require('lodash');
 
+const { HOMER_NATIVE_USERS_TABLE, ALL_HOMER_USERS_TABLE } = require('../db');
 // Error imports
 const { UserNotFoundError } = require('../errors/UserErrors');
 
@@ -27,7 +28,7 @@ async function findUser(contactNumber) {
     try {
       const result = await docClient.get(params).promise();
       if (!_.isEmpty(result)) {
-        if (agency === 'homer-native') {
+        if (userTable === HOMER_NATIVE_USERS_TABLE) {
           return { contactNumber, agency: result.Item.agency };
         }
         return { contactNumber, agency };
@@ -45,8 +46,7 @@ async function findUser(contactNumber) {
 
 async function registerUser({ contactNumber, agency, pushNotificationToken }) {
   const updateParams = {
-    // TODO change to use env var instead of hardcoded string
-    TableName: 'homer-native-users-staging',
+    TableName: HOMER_NATIVE_USERS_TABLE,
     Key: {
       contact_number: contactNumber,
     },

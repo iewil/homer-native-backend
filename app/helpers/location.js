@@ -1,7 +1,6 @@
 const AWS = require('aws-sdk');
 const { LocationSavingError } = require('../errors/LocationErrors');
-
-const HOMER_LOCATIONS_TABLE = 'homer-native-location';
+const { HOMER_NATIVE_LOCATIONS_TABLE } = require('../db');
 
 const AWS_REGION_NAME = 'ap-southeast-1';
 AWS.config.update({ region: AWS_REGION_NAME });
@@ -12,11 +11,11 @@ async function saveLocation({
 }) {
   const putParams = {
     Item: {
-      // contact_number: contactNumber,
+      contact_number: contactNumber,
       submitted_time: new Date().getTime(),
       data: { longitude, latitude, accuracy },
     },
-    TableName: HOMER_LOCATIONS_TABLE,
+    TableName: HOMER_NATIVE_LOCATIONS_TABLE,
   };
   try {
     await docClient.put(putParams).promise();
