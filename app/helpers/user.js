@@ -55,6 +55,17 @@ async function findUser(contactNumber) {
   throw new UserNotFoundError(contactNumber);
 }
 
+/**
+ * We store users who migrate from the SMS system to the native app
+ * in a new table (`homer-native-user-<table_env>`).
+ * The important things we store in that table is:
+ * - User's contact number
+ * - agency that's enforcing their SHN
+ * - Other info (i.e push notification token, etc.)
+ *
+ * This was done so it's easier to find the user compared to going through multiple users tables
+ * and we also needed to store their device's push notification token as well
+ */
 async function registerUser({ contactNumber, agency, pushNotificationToken }) {
   const updateParams = {
     TableName: HOMER_NATIVE_USERS_TABLE,
