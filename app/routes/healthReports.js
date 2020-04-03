@@ -7,7 +7,7 @@ async function getHealthReports (req, res) {
   try {
     // TO-DO
 
-    const healthReports
+    let healthReports
     res.status(200).send({ healthReports })
   } catch (err) {
     res.status(500).send(err.message)

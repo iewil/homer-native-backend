@@ -1,4 +1,5 @@
 const express = require('express');
+const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const OTPManager = require('./helpers/otp');
 const UserHelper = require('./helpers/user');

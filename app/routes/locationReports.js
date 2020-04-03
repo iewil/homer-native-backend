@@ -7,7 +7,7 @@ async function getLocationReports (req, res) {
   try {
     // TO-DO
 
-    const locationReports
+    let locationReports
     res.status(200).send({ locationReports })
   } catch (err) {
     res.status(500).send(err.message)

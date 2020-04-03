@@ -7,7 +7,7 @@ async function uploadPhotoToS3 (req, res) {
   try {
     // TO-DO
 
-    const photoS3Key
+    let photoS3Key
     res.status(200).send({ photo_s3_key: photoS3Key })
   } catch (err) {
     res.status(500).send(err.message)

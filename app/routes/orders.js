@@ -7,7 +7,7 @@ async function getAllOrders (req, res) {
   try {
     // TO-DO
 
-    const orders
+    let orders
     res.status(200).send({ orders })
   } catch (err) {
     res.status(500).send(err.message)
