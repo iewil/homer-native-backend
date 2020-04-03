@@ -2,42 +2,89 @@
 const express = require('express')
 const router = express.Router()
 
-async function getHealthReports (req, res) {
-  const { order_id: orderId } = req.params
-  try {
-    // TO-DO
+// Middlewares
+const { verifyJwt } = require('./middlewares/auth');
 
+// Validators
+const Ajv = require('ajv');
+const ajv = new Ajv()
+const { getHealthReportsSchema, createHealthReportSchema } = require('../validators/utils')
+
+// Errors
+const { DbError, InputSchemaValidationError } = require('../errors')
+
+async function getHealthReports (req, res) {
+  try {
+    // 1. Validate request
+    let validRequest = ajv.validate(getHealthReportsSchema, req)
+    if (!validRequest) throw new InputSchemaValidationError(JSON.stringify(ajv.errors))
+
+    const { order_id: orderId } = req.params
+
+    // 2. Find all locationReport objects that have the specified orderId
     let healthReports
+    try {
+      healthReports = await HealthReport.findAll({
+        where: {
+          order_id: orderId
+        }
+      })
+      console.log(`Successfully obtained health reports for orderId: ${orderId}`) 
+    } catch (err) {
+      throw new DbError(err)
+    }
+
     res.status(200).send({ healthReports })
   } catch (err) {
+    console.error(`GET /health-reports failed with err: ${err}`)
     res.status(500).send(err.message)
   }
 };
 
 async function createHealthReport (req, res) {
- 
-  // TO-DO: Verify JWT
-
-  const { 
-    temperature, 
-    cough, 
-    sore_throat: soreThroat, 
-    runny_nose: runnyNose, 
-    shortness_of_breath: shortnessOfBreath, 
-    photo_s3_key: photoS3Key, 
-    metadata, 
-    timestamp
-  } = req.body
-
   try {
-    // TO-DO
+    // 1. Validate request
+    let validRequest = ajv.validate(createHealthReportSchema, req)
+    if (!validRequest) throw new InputSchemaValidationError(JSON.stringify(ajv.errors))
+    
+    const { 
+      temperature,
+      cough,
+      sore_throat: soreThroat,
+      runny_nose: runnyNose,
+      shortness_of_breath: shortnessOfBreath,
+      photo_s3_key: photoS3Key,
+      metadata
+    } = req.body
+    const orderId = req.orderId // Obtained from JWT in the auth middleware
+
+    // 2. Store healthReport in the DB
+    let healthReport = {
+      order_id: orderId,
+      temperature, 
+      cough, 
+      sore_throat: soreThroat, 
+      runny_nose: runnyNose, 
+      shortness_of_breath: shortnessOfBreath, 
+      photo_s3_key: photoS3Key, 
+      metadata
+    }
+
+    try {
+      await HealthReport.create(healthReport)
+      console.log(`Successfully created health report: ${healthReport}`) 
+    } catch (err) {
+      throw new DbError(err)
+    }
+    
     res.status(200).send('Ok')
   } catch (err) {
+    console.error(`POST /health-reports failed with err: ${err}`)
     res.status(500).send(err.message)
   }
 };
 
 router.get('/', getHealthReports)
-router.post('/', createHealthReport)
+router.post('/', verifyJwt, createHealthReport)
 
 module.exports = router;
