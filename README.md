@@ -10,12 +10,12 @@ Backend for the homer mobile application
 * run `source .env` at the root of the directory
 
 ### Schema and dummy data
-Run the following commands at the root of the directory:
-`./node_modules/.bin/sequelize db:migrate`
-`./node_modules/.bin/sequelize db:seed:all
+Run the following commands at the root of the directory:\
+`./node_modules/.bin/sequelize db:migrate`\
+`./node_modules/.bin/sequelize db:seed:all`
 
-If Sequelize is installed globally on the machine, simply run:
-`sequelize db:migrate`
+If Sequelize is installed globally on the machine, simply run:\
+`sequelize db:migrate`\
 `sequelize db:seed:all`
 
 ## Documentation
