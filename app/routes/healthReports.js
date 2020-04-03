@@ -3,15 +3,19 @@ const express = require('express')
 const router = express.Router()
 
 // Middlewares
-const { verifyJwt } = require('./middlewares/auth');
+const { verifyJwt } = require('../middlewares/auth');
+
+// Services
+const { HealthReportService } = require('../services/HealthReportService')
 
 // Validators
 const Ajv = require('ajv');
 const ajv = new Ajv()
-const { getHealthReportsSchema, createHealthReportSchema } = require('../validators/utils')
+const { getHealthReportsSchema, createHealthReportSchema } = require('../validators/healthReports')
 
 // Errors
-const { DbError, InputSchemaValidationError } = require('../errors')
+const { DbError } = require('../errors/DbErrors') 
+const { InputSchemaValidationError } = require('../errors/InputValidationErrors')
 
 async function getHealthReports (req, res) {
   try {
@@ -24,11 +28,7 @@ async function getHealthReports (req, res) {
     // 2. Find all locationReport objects that have the specified orderId
     let healthReports
     try {
-      healthReports = await HealthReport.findAll({
-        where: {
-          order_id: orderId
-        }
-      })
+      healthReports = await HealthReportService.getAllHealthReports(orderId)
       console.log(`Successfully obtained health reports for orderId: ${orderId}`) 
     } catch (err) {
       throw new DbError(err)
@@ -71,8 +71,8 @@ async function createHealthReport (req, res) {
     }
 
     try {
-      await HealthReport.create(healthReport)
-      console.log(`Successfully created health report: ${healthReport}`) 
+      await HealthReportService.addHealthReport(healthReport)
+      console.log(`Successfully created health report: ${JSON.parse(healthReport)}`) 
     } catch (err) {
       throw new DbError(err)
     }
@@ -84,7 +84,7 @@ async function createHealthReport (req, res) {
   }
 };
 
-router.get('/', getHealthReports)
+router.get('/:order_id', getHealthReports)
 router.post('/', verifyJwt, createHealthReport)
 
 module.exports = router;

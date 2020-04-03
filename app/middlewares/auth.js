@@ -6,7 +6,7 @@ function verifyJwt(req, res, next) {
   let authorization = req.headers.authorization;
 
   if (!authorization || !authorization.startsWith('Bearer ')) {
-    res.status(401).send('Unauthorized');
+    return res.status(401).send('Unauthorized');
   }
 
   // Remove 'Bearer '
@@ -17,17 +17,14 @@ function verifyJwt(req, res, next) {
     req.orderId = orderId;
     next();
   } catch (err) {
+    console.error('Error authenticating', err, JSON.stringify(req.headers));
+
     if (err instanceof jwt.TokenExpiredError) {
-      res.status(401).send('Token expired');
-      return;
+      return res.status(401).send('Token expired')
     }
     if (err instanceof jwt.JsonWebTokenError) {
-      res.status(400).send('Malformed JWT');
-      return;
+      return res.status(400).send('Malformed JWT')
     }
-
-    console.error('Error authenticating', err, JSON.stringify(req.headers));
-    res.status(500).send('Unhandled auth middleware error, check logs');
   }
 }
 

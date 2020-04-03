@@ -4,24 +4,25 @@ const _ = require('lodash')
 // Errors
 const { DbError } = require('../errors/DbErrors')
 
-class LocationReportService {
-  static async addLocationReport(newReport) {
+
+class HealthReportService {
+  static async addHealthReport(newReport) {
     try{
-      return await db.LocationReports.create(newReport)
+      return await db.HealthReports.create(newReport)
     } catch (err) {
       throw new DbError(err)
     }
   }
 
-  static async getAllLocationReports(orderId) {
+  static async getAllHealthReports(orderId) {
     try {
       const query = {
         where: {
           id: orderId,
         }, 
         include: [{
-          model: db.LocationReports,
-          as: 'LocationReports'
+          model: db.HealthReports,
+          as: 'HealthReports'
         }]
       }
 
@@ -40,5 +41,5 @@ class LocationReportService {
 }
 
 module.exports = {
-  LocationReportService
+  HealthReportService
 }
