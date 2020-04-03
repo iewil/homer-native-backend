@@ -4,7 +4,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       autoIncrement: true,
       primaryKey: true,
-      type: Sequelize.BIGINT
+      type: DataTypes.BIGINT
     },
     temperature: {
       type: DataTypes.FLOAT,
@@ -34,6 +34,7 @@ module.exports = (sequelize, DataTypes) => {
     HealthReports.belongsTo(models.QuarantineOrders, {
       onDelete: 'CASCADE',
       foreignKey: {
+        name: 'id',
         allowNull: false
       }
     })

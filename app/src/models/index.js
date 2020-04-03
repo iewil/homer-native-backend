@@ -1,7 +1,7 @@
-import fs from 'fs'
-import path from 'path'
-import Sequelize from 'sequelize'
-import configJson from '../config/config'
+const fs = require('fs')
+const path = require('path')
+const Sequelize = require('sequelize')
+const configJson = require('../config/config')
 
 const basename = path.basename(__filename)
 const env = process.env.NODE_ENV ? process.env.NODE_ENV : 'development'
@@ -31,9 +31,12 @@ if (config.environment === 'production') {
       logging: true
     }
   )
-} else {
+} else if (env === 'development') {
+  // connection = new Sequelize(
+  //    config.database, config.username, config.password, config
+  // )
   sequelize = new Sequelize(
-     config.database, config.username, config.password, config
+    process.env[config.use_env_variable], config
   )
 }
 
@@ -57,4 +60,4 @@ Object.keys(db).forEach((modelName) => {
 db.sequelize = sequelize
 db.Sequelize = Sequelize
 
-export default db
+module.exports = db

@@ -91,7 +91,7 @@ module.exports = {
         latitude: parseFloat("1.3294"),
         longitude: parseFloat("103.8021"),
         metadata: null,
-        order_id: "qo_a5c5361c-f996-4a2d-b159-9e810d5f30e7",
+        order_id: "qo_27b8b12b-1a87-402a-a8bf-b3a2e0058e64",
         createdAt: new Date(),
         updatedAt: new Date()
       },
@@ -100,7 +100,7 @@ module.exports = {
         latitude: parseFloat("1.3312"),
         longitude: parseFloat("103.7972"),
         metadata: null,
-        order_id: "qo_a5c5361c-f996-4a2d-b159-9e810d5f30e7",
+        order_id: "qo_27b8b12b-1a87-402a-a8bf-b3a2e0058e64",
         createdAt: second_report,
         updatedAt: second_report
       },
@@ -155,7 +155,7 @@ module.exports = {
         shortness_of_breath: false,
         photo_s3_key: null,
         metadata: null,
-        order_id: "qo_a5c5361c-f996-4a2d-b159-9e810d5f30e7",
+        order_id: "qo_27b8b12b-1a87-402a-a8bf-b3a2e0058e64",
         createdAt: new Date(),
         updatedAt: new Date()
       },
@@ -168,7 +168,7 @@ module.exports = {
         shortness_of_breath: false,
         photo_s3_key: null,
         metadata: null,
-        order_id: "qo_a5c5361c-f996-4a2d-b159-9e810d5f30e7",
+        order_id: "qo_27b8b12b-1a87-402a-a8bf-b3a2e0058e64",
         createdAt: second_report,
         updatedAt: second_report
       },

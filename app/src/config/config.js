@@ -3,12 +3,12 @@ require('dotenv').config()
 module.exports = {
   development: {
     // online dev database
-    use_env_variable: 'DATABASE_URL'
+    use_env_variable: 'DATABASE_URL',
     // database: 'homer_native_dev',
     // username: 'example',
     // password: null,
     // host: '127.0.0.1',
-    // dialect: 'postgres'
+    dialect: 'postgres'
   },
 
   test: {

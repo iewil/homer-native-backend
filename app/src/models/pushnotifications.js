@@ -4,7 +4,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       autoIncrement: true,
       primaryKey: true,
-      type: Sequelize.BIGINT
+      type: DataTypes.BIGINT
     },
     push_notification_id: {
       type: DataTypes.STRING,
@@ -20,6 +20,7 @@ module.exports = (sequelize, DataTypes) => {
     PushNotifications.belongsTo(models.QuarantineOrders, {
       onDelete: 'CASCADE',
       foreignKey: {
+        name: 'id',
         allowNull: false
       }
     })

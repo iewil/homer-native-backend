@@ -22,9 +22,9 @@ module.exports = (sequelize, DataTypes) => {
   }, {});
   QuarantineOrders.associate = function(models) {
     // associations can be defined here
-    QuarantineOrders.hasMany(models.LocationReports),
-    QuarantineOrders.hasMany(models.HealthReports),
-    QuarantineOrders.hasMany(models.PushNotifications)
+    QuarantineOrders.hasMany(models.LocationReports, { foreignKey: 'order_id', sourceKey: 'id' })
+    QuarantineOrders.hasMany(models.HealthReports, { foreignKey: 'order_id', sourceKey: 'id' })
+    QuarantineOrders.hasMany(models.PushNotifications, { foreignKey: 'order_id', sourceKey: 'id' })
   };
   return QuarantineOrders;
 };

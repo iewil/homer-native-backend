@@ -3,6 +3,8 @@ const cors = require('cors');
 
 const { PORT } = process.env;
 
+const db = require('./src/models')
+
 const app = express();
 app.use(express.json());
 
@@ -57,6 +59,9 @@ app.use('/orders', ordersRouter);
 app.use('/otp', otpRouter);
 app.use('/photos', photosRouter);
 
-app.listen(PORT, () => console.log(`Native Homer backend app listening on port ${PORT}`));
+db.sequelize.sync().then(() => {
+  console.log("DB connection successful")
+  app.listen(PORT, () => console.log(`Native Homer backend app listening on port ${PORT}`));
+})
 
 module.exports = app;

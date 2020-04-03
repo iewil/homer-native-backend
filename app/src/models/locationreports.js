@@ -4,7 +4,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       autoIncrement: true,
       primaryKey: true,
-      type: Sequelize.BIGINT
+      type: DataTypes.BIGINT
     },
     latitude: {
       type: DataTypes.DOUBLE,
@@ -21,6 +21,7 @@ module.exports = (sequelize, DataTypes) => {
     LocationReports.belongsTo(models.QuarantineOrders, {
       onDelete: 'CASCADE',
       foreignKey: {
+        name: 'id',
         allowNull: false
       }
     })
