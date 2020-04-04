@@ -35,7 +35,7 @@ async function getLocationReports (req, res) {
     }
 
     const locationReports = locationReportsForOrder.locationReports
-    res.status(200).send({ locationReports })
+    res.status(200).send({ location_reports: locationReports })
   } catch (err) {
     console.error(`GET /location-reports failed with err: ${err}`)
     res.status(500).send(err.message)

@@ -35,7 +35,7 @@ async function getHealthReports (req, res) {
     }
 
     const healthReports = healthReportsForOrder.healthReports
-    res.status(200).send({ healthReports })
+    res.status(200).send({ health_reports: healthReports })
   } catch (err) {
     console.error(`GET /health-reports failed with err: ${err}`)
     res.status(500).send(err.message)
