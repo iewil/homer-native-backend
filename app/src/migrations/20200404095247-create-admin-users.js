@@ -8,6 +8,7 @@ module.exports = {
         type: Sequelize.BIGINT
       },
       email: {
+        unique: true,
         type: Sequelize.STRING
       },
       createdAt: {
