@@ -22,7 +22,7 @@ module.exports = {
   staging: {
     database: process.env.DB_NAME,
     username: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
+    password: process.env.DB_PASS,
     host: process.env.DB_HOST,
     port: process.env.DB_PORT,
     dialect: 'postgres',
@@ -36,7 +36,7 @@ module.exports = {
   production: {
     database: process.env.DB_NAME,
     username: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
+    password: process.env.DB_PASS,
     host: process.env.DB_HOST,
     port: process.env.DB_PORT,
     dialect: 'postgres',
