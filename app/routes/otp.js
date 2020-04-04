@@ -40,7 +40,7 @@ const checkAdminUser = (contact) => {
  * @api {post} /otp/generate Create OTP for user
  * @apiVersion 0.1.0
  * @apiGroup OTP
- * @apiParam {String} contact_number     User's contact number
+ * @apiParam {String} contact     User's contact number or email
  *
  * @apiSuccessExample {text} Success-Reponse:
  *  HTTP/1.1 200 OK
@@ -94,14 +94,14 @@ async function generateOtp(req, res) {
  * @api {post} /otp/verify Verify user's OTP
  * @apiVersion 0.1.0
  * @apiGroup OTP
- * @apiParam {String} contact_number         User's contact number
+ * @apiParam {String} contact         User's contact number or email
  * @apiParam {String} otp                   Keyed in OTP
  *
  * @apiSuccess {Object} access_token     User's access token (JWT)
  * @apiSuccessExample {json} Success-Reponse:
  *  HTTP/1.1 200 OK
  *    {
- *      "token" : "eyJhbdQssw5c...sadjaksd123j1lkj98c87a4ag20b8621nour978"
+ *      "access_token" : "eyJhbdQssw5c...sadjaksd123j1lkj98c87a4ag20b8621nour978"
  *    }
  * @apiErrorExample {text} Error-Response:
  * HTTP/1.1 400 Bad Request
