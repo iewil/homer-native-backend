@@ -1,63 +1,22 @@
 const _ = require('lodash');
 const moment = require('moment');
-const crypto = require('crypto');
-const bcrypt = require('bcryptjs');
 const { Op } = require('sequelize');
 const db = require('../src/models');
 const { DbError } = require('../errors/DbErrors');
-const ApplicationError = require('../errors/BaseError');
 
-const SALT_ROUNDS = 10;
 class OtpService {
   /**
-   * This creates an OTP for the given contact number.
-   * To create the OTP; the following check is done:
-   * - Check if the contact number is found in the quarantine orders table
-   *    This is because we don't want people not on quarantine to use the app
+   * Saves a OTP entry
    * @param {String} contactNumber - User's contact number
+   * @param {String} hashedOtp - Hash of generated OTP
    */
-  static async createOtp(contactNumber) {
-    // 1. Find if a quarantine order exists for the given contact number
-    const params = {
-      where: {
-        contact_number: contactNumber,
-        [Op.and]: [ // check that order falls within the start and end date
-          {
-            start_date: {
-              [Op.lte]: new Date(),
-            },
-          },
-          {
-            end_date: {
-              [Op.gte]: new Date(),
-            },
-          },
-        ],
-      },
-      order: [['createdAt', 'DESC']],
-    };
+  static async saveOtp(contactNumber, hashedOtp) {
     try {
-      const result = await db.QuarantineOrders.findOne(params);
-      if (_.isEmpty(result)) {
-        throw new ApplicationError(`No Quarantine Order with this number, ${contactNumber}, to create OTP for`, 404);
-      }
-      // 2. Generate OTP
-      let otp;
-      do {
-        otp = crypto.randomBytes(3).toString('hex');
-      }
-      while (otp.match(/[a-z]/i));
-      console.log(`Generated OTP ${otp} for ${contactNumber}`);
-
-      // 3. Save OTP
       await db.Otp.create({
         contact_number: contactNumber,
-        otp: bcrypt.hashSync(otp, SALT_ROUNDS),
+        otp: hashedOtp,
       });
     } catch (err) {
-      if (err instanceof ApplicationError) {
-        throw err;
-      }
       throw new DbError(err);
     }
   }
