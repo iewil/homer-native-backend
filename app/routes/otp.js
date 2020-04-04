@@ -7,9 +7,12 @@ const jwt = require('jsonwebtoken');
 const router = express.Router();
 const OtpService = require('../services/OtpService');
 const QuarantineOrderService = require('../services/QuarantineOrderService');
+const AdminUserService = require('../services/AdminUserService');
 
 const SALT_ROUNDS = 10;
 const { TOKEN_SIGNING_KEY } = process.env;
+const PHONE_NUMBER_REGEX = /^65[0-9]{8}$/;
+const GOV_SG_EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.+-]+\.gov.sg$/;
 
 /**
  * @api {post} /otp/generate Create OTP for user
@@ -26,20 +29,46 @@ const { TOKEN_SIGNING_KEY } = process.env;
  * No Quarantine Order found for this number
  */
 async function generateOtp(req, res) {
-  const { contact_number: contactNumber } = req.body;
+  const { contact } = req.body;
   try {
-    // 1. Check if user is on a quarantine order before issuing OTP
-    await QuarantineOrderService.getLatestOrderByContactNumber(contactNumber);
+    let isAdmin;
+    let email;
+    let contactNumber;
+    // 0. Validate whether contact is a phone number or email
+    if (contact.match(PHONE_NUMBER_REGEX)) {
+      isAdmin = false;
+      contactNumber = contact;
+    } else if (contact.match(GOV_SG_EMAIL_REGEX)) {
+      isAdmin = true;
+      email = contact;
+    } else {
+      throw new Error('Provided contact must be either a gov.sg email or a phone number');
+    }
+
+    // 1. Check if user is on a quarantine order or admin user before issuing OTP
+    if (isAdmin) {
+      await AdminUserService.getUser(email);
+    } else {
+      await QuarantineOrderService.getLatestOrderByContactNumber(contactNumber);
+    }
+
     // 2. Generate OTP
     let otp;
     do {
       otp = crypto.randomBytes(3).toString('hex');
     }
     while (otp.match(/[a-z]/i));
-    console.log(`Generated OTP ${otp} for ${contactNumber}`);
+    console.log(`Generated OTP ${otp} for ${contact}`);
 
     const hashedOtp = bcrypt.hashSync(otp, SALT_ROUNDS);
-    await OtpService.saveOtp(contactNumber, hashedOtp);
+
+    // 3. Save OTP to table
+    await OtpService.saveOtp({
+      contactNumber,
+      email,
+      hashedOtp,
+    });
+
     res.status(200).send({ message: 'OTP created' });
   } catch (err) {
     res.status(500).send(err.message);
