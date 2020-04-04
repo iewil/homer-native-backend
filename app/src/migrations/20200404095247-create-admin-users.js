@@ -10,6 +10,7 @@ module.exports = {
       },
       email: {
         unique: true,
+        allowNull: false,
         type: Sequelize.STRING
       },
       createdAt: {
