@@ -13,28 +13,14 @@ console.log('this is the environment: ', env)
 const db = {}
 
 let sequelize
-// Use the production config if env is either staging or production
-if (env === 'production' || env === 'staging') {
-  sequelize = new Sequelize(
-    process.env.DB_NAME,
-    process.env.DB_USER,
-    process.env.DB_PASS, {
-      host: process.env.DB_HOST,
-      port: process.env.DB_PORT,
-      dialect: 'postgres',
-      dialectOption: {
-        ssl: true,
-        native: true
-      },
-      logging: true
-    }
-  )
-} else if (env === 'development') {
-  // connection = new Sequelize(
-  //    config.database, config.username, config.password, config
-  // )
+
+if (config.use_env_variable) {
   sequelize = new Sequelize(
     process.env[config.use_env_variable], config
+  )
+} else {
+  sequelize = new Sequelize(
+     config.database, config.username, config.password, config
   )
 }
 
