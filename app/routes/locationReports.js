@@ -34,7 +34,8 @@ async function getLocationReports (req, res) {
       throw new DbError(err)
     }
 
-    res.status(200).send({ locationReportsForOrder })
+    const locationReports = locationReportsForOrder.locationReports
+    res.status(200).send({ locationReports })
   } catch (err) {
     console.error(`GET /location-reports failed with err: ${err}`)
     res.status(500).send(err.message)
