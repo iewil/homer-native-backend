@@ -34,12 +34,23 @@ class LocationReportService {
       }
 
       const data = result.dataValues
-      const locations = data.LocationReports.map(report => {
+
+      // Flatten locationReports
+      const locationReports = data.LocationReports.map(report => {
         return report.dataValues
       })
-      data.LocationReports = locations
 
-      return data
+      const locationReportsForOrder = {
+        orderId: data.id,
+        contactNumber: data.contact_number,
+        startDate: data.start_date,
+        endDate: data.end_date,
+        photoS3Key: data.photo_s3_key,
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt,
+        locationReports: locationReports
+      }
+      return locationReportsForOrder
     } catch (err) {
       throw err
     }
