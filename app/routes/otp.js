@@ -4,8 +4,6 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 
-const { verifyJwt } = require('../middlewares/auth')
-
 const router = express.Router();
 const OtpService = require('../services/OtpService');
 const QuarantineOrderService = require('../services/QuarantineOrderService');
