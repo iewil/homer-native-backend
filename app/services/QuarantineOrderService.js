@@ -31,7 +31,7 @@ class QuarantineOrderService {
       if (_.isEmpty(result)) {
         throw new ApplicationError(`No Quarantine Order found for this number, ${contactNumber}`, 404);
       }
-      return result.id;
+      return result;
     } catch (err) {
       if (err instanceof ApplicationError) {
         throw err;
