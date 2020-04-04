@@ -16,9 +16,6 @@ let sequelize
 // Use the production config if env is either staging or production
 if (env === 'production' || env === 'staging') {
   sequelize = new Sequelize(
-      process.env.production, config
-    )
-  sequelize = new Sequelize(
     process.env.DB_NAME,
     process.env.DB_USER,
     process.env.DB_PASS, {
