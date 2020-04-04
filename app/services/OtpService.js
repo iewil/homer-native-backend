@@ -1,9 +1,20 @@
 const _ = require('lodash');
+const moment = require('moment');
+const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 const { Op } = require('sequelize');
 const db = require('../src/models');
 const { DbError } = require('../errors/DbErrors');
 
+const SALT_ROUNDS = 10;
 class OtpService {
+  /**
+   * This creates an OTP for the given contact number.
+   * To create the OTP; the following check is done:
+   * - Check if the contact number is found in the quarantine orders table
+   *    This is because we don't want people not on quarantine to use the app
+   * @param {String} contactNumber - User's contact number
+   */
   static async createOtp(contactNumber) {
     // 1. Find if a quarantine order exists for the given contact number
     const params = {
@@ -34,12 +45,39 @@ class OtpService {
         otp = crypto.randomBytes(3).toString('hex');
       }
       while (otp.match(/[a-z]/i));
+      console.log('generated', otp);
 
       // 3. Save OTP
       await db.Otp.create({
         contact_number: contactNumber,
-        otp,
+        otp: bcrypt.hashSync(otp, SALT_ROUNDS),
       });
+    } catch (err) {
+      throw new DbError(err);
+    }
+  }
+
+  /**
+   * This fetches the latest OTP associated to the given `contactNumber`
+   * and within the 15 minute expiry time
+   * @param {String} contactNumber - User's contact number
+   */
+  static async getOtp(contactNumber) {
+    const params = {
+      where: {
+        contact_number: contactNumber,
+        createdAt: { // Get OTP that is within 15min of validity
+          [Op.lte]: moment().add('15', 'minutes').format(),
+        },
+      },
+      order: [['createdAt', 'DESC']],
+    };
+    try {
+      const result = await db.Otp.findOne(params);
+      if (_.isEmpty(result)) {
+        return null;
+      }
+      return result.otp;
     } catch (err) {
       throw new DbError(err);
     }
