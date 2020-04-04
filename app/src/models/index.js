@@ -13,9 +13,10 @@ console.log('this is the environment: ', env)
 const db = {}
 
 let sequelize
-if (config.environment === 'production') {
+// Use the production config if env is either staging or production
+if (env === 'production' || env === 'staging') {
   sequelize = new Sequelize(
-      process.env[config.use_env_variable], config
+      process.env.production, config
     )
   sequelize = new Sequelize(
     process.env.DB_NAME,

@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 
 const { PORT } = process.env;
+const env = process.env.NODE_ENV ? process.env.NODE_ENV : 'development'
 
 const db = require('./src/models')
 
@@ -59,9 +60,20 @@ app.use('/orders', ordersRouter);
 app.use('/otp', otpRouter);
 app.use('/photos', photosRouter);
 
-db.sequelize.sync().then(() => {
-  console.log("DB connection successful")
-  app.listen(PORT, () => console.log(`Native Homer backend app listening on port ${PORT}`));
-})
+// If env is staging, development or test, run sync to seed data
+if (
+  env === 'staging' || 
+  env === 'development' || 
+  env === 'test') {
+  db.sequelize.sync().then(() => {
+    console.log(`DB connection successful, env: ${env}`)
+    app.listen(PORT, () => console.log(`Native Homer backend app listening on port ${PORT}`));
+  })
+} else if (env === 'production') {
+  db.sequelize.authenticate().then(() => {
+    console.log(`DB connection successful, env: ${env}`)
+    app.listen(PORT, () => console.log(`Native Homer backend app listening on port ${PORT}`));
+  })
+}
 
 module.exports = app;
