@@ -13,7 +13,7 @@ class LocationReportService {
     }
   }
 
-  static async getAllLocationReports(orderId) {
+  static async getAllLocationsForOrder(orderId) {
     try {
       const query = {
         where: {
@@ -27,12 +27,19 @@ class LocationReportService {
 
       let result
       try {
-        result = await db.QuarantineOrders.findAll(query)
+        // findOne because order IDs have a unique constraint in the DB
+        result = await db.QuarantineOrders.findOne(query)
       } catch (err) {
         throw new DbError(err)
       }
 
-      return result
+      const data = result.dataValues
+      const locations = data.LocationReports.map(report => {
+        return report.dataValues
+      })
+      data.LocationReports = locations
+
+      return data
     } catch (err) {
       throw err
     }
