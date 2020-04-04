@@ -11,6 +11,20 @@ const QuarantineOrderService = require('../services/QuarantineOrderService');
 const SALT_ROUNDS = 10;
 const { TOKEN_SIGNING_KEY } = process.env;
 
+/**
+ * @api {post} /otp/generate Create OTP for user
+ * @apiVersion 0.1.0
+ * @apiGroup OTP
+ * @apiParam {String} contact_number     User's contact number
+ *
+ * @apiSuccessExample {text} Success-Reponse:
+ *  HTTP/1.1 200 OK
+ *  OTP created
+ *
+ * @apiErrorExample {text} Error-Response:
+ * HTTP/1.1 404 Not Found
+ * No Quarantine Order found for this number
+ */
 async function generateOtp(req, res) {
   const { contact_number: contactNumber } = req.body;
   try {
@@ -32,12 +46,29 @@ async function generateOtp(req, res) {
   }
 }
 
+/**
+ * @api {post} /otp/verify Verify user's OTP
+ * @apiVersion 0.1.0
+ * @apiGroup OTP
+ * @apiParam {String} contact_number         User's contact number
+ * @apiParam {String} otp                   Keyed in OTP
+ *
+ * @apiSuccess {Object} access_token     User's access token (JWT)
+ * @apiSuccessExample {json} Success-Reponse:
+ *  HTTP/1.1 200 OK
+ *    {
+ *      "token" : "eyJhbdQssw5c...sadjaksd123j1lkj98c87a4ag20b8621nour978"
+ *    }
+ * @apiErrorExample {text} Error-Response:
+ * HTTP/1.1 400 Bad Request
+ * Invalid OTP
+ */
 async function verifyOtp(req, res) {
   const { contact_number: contactNumber, otp } = req.body;
   try {
     const retrievedOtp = await OtpService.getOtp(contactNumber);
     if (!bcrypt.compareSync(otp, retrievedOtp)) {
-      res.status(400).send('Invalid OTP');
+      res.status(401).send('Invalid OTP');
       return;
     }
     // Retrieve latest order related to number
