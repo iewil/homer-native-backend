@@ -59,7 +59,7 @@ async function createLocationReport (req, res) {
       metadata 
     }
     await LocationReportService.addLocationReport(locationReport)
-    console.log(`Successfully created location report: ${JSON.parse(locationReport)}`) 
+    console.log(`Successfully created location report: ${locationReport}`) 
 
     res.status(200).send('Ok')
   } catch (err) {
