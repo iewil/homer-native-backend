@@ -73,7 +73,7 @@ async function createHealthReport (req, res) {
 
     try {
       await HealthReportService.addHealthReport(healthReport)
-      console.log(`Successfully created health report: ${JSON.parse(healthReport)}`) 
+      console.log(`Successfully created health report: ${healthReport}`) 
     } catch (err) {
       throw new DbError(err)
     }
