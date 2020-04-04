@@ -26,14 +26,15 @@ async function getHealthReports (req, res) {
     const { order_id: orderId } = req.params
 
     // 2. Find all locationReport objects that have the specified orderId
-    let healthReports
+    let healthReportsForOrder
     try {
-      healthReports = await HealthReportService.getAllHealthReports(orderId)
+      healthReportsForOrder = await HealthReportService.getAllHealthReports(orderId)
       console.log(`Successfully obtained health reports for orderId: ${orderId}`) 
     } catch (err) {
       throw new DbError(err)
     }
 
+    const healthReports = healthReportsForOrder.healthReports
     res.status(200).send({ healthReports })
   } catch (err) {
     console.error(`GET /health-reports failed with err: ${err}`)
