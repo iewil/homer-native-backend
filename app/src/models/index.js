@@ -6,6 +6,13 @@ const configJson = require('../config/config')
 const basename = path.basename(__filename)
 const env = process.env.NODE_ENV ? process.env.NODE_ENV : 'development'
 
+const {
+  DB_NAME,
+  DB_USER,
+  DB_PASS,
+  DB_HOST
+} = process.env
+
 const config = configJson[env]
 
 console.log('this is the environment: ', env)
@@ -14,14 +21,13 @@ const db = {}
 
 let sequelize
 
-if (config.use_env_variable) {
+if (env === 'development') {
   sequelize = new Sequelize(
     process.env[config.use_env_variable], config
   )
 } else {
-  sequelize = new Sequelize(
-     config.database, config.username, config.password, config
-  )
+  const DB_URL = `${DB_NAME}://${DB_USER}:${DB_PASS}@${DB_HOST}/${DB_NAME}`
+  sequelize = new Sequelize(DB_URL)
 }
 
 fs
