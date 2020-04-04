@@ -26,15 +26,16 @@ async function getLocationReports (req, res) {
     const { order_id: orderId } = req.params
 
     // 2. Find all locationReport objects that have the specified orderId
-    let locationReports
+    let locationReportsForOrder
     try {
-      locationReports = await LocationReportService.getAllLocationReports(orderId)
+      locationReportsForOrder = await LocationReportService.getAllLocationsForOrder(orderId)
       console.log(`Successfully obtained location reports for orderId: ${orderId}`) 
     } catch (err) {
       throw new DbError(err)
     }
 
-    res.status(200).send({ locationReports })
+    const locationReports = locationReportsForOrder.locationReports
+    res.status(200).send({ location_reports: locationReports })
   } catch (err) {
     console.error(`GET /location-reports failed with err: ${err}`)
     res.status(500).send(err.message)
