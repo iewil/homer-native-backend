@@ -69,6 +69,6 @@ async function createLocationReport (req, res) {
 };
 
 router.get('/:order_id', getLocationReports)
-router.post('/', createLocationReport)
+router.post('/', verifyJwt, createLocationReport)
 
 module.exports = router;
