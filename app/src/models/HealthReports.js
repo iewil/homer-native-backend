@@ -34,7 +34,7 @@ module.exports = (sequelize, DataTypes) => {
     HealthReports.belongsTo(models.QuarantineOrders, {
       onDelete: 'CASCADE',
       foreignKey: {
-        name: 'id',
+        name: 'order_id',
         allowNull: false
       }
     })

@@ -27,7 +27,7 @@ if (env === 'development') {
   )
 } else {
   const DB_URL = `${DB_NAME}://${DB_USER}:${DB_PASS}@${DB_HOST}/${DB_NAME}`
-  sequelize = new Sequelize(DB_URL)
+  sequelize = new Sequelize(DB_URL, config)
 }
 
 fs
