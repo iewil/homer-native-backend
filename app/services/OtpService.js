@@ -6,14 +6,18 @@ const { DbError } = require('../errors/DbErrors');
 
 class OtpService {
   /**
-   * Saves a OTP entry
+   * @apiDescription Saves an OTP entry. The OTP entry contains a
+   * email or contactNumber attribute, depending on whether the OTP
+   * is being issued for an admin user.
    * @param {String} contactNumber - User's contact number
+   * @param {String} email - User's email
    * @param {String} hashedOtp - Hash of generated OTP
    */
-  static async saveOtp(contactNumber, hashedOtp) {
+  static async saveOtp({ contactNumber, email, hashedOtp }) {
     try {
       await db.Otp.create({
         contact_number: contactNumber,
+        email,
         otp: hashedOtp,
       });
     } catch (err) {
