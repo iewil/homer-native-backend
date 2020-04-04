@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 const { Op } = require('sequelize');
 const db = require('../src/models');
 const { DbError } = require('../errors/DbErrors');
+const ApplicationError = require('../errors/BaseError');
 
 const SALT_ROUNDS = 10;
 class OtpService {
@@ -37,15 +38,16 @@ class OtpService {
     };
     try {
       const result = await db.QuarantineOrders.findOne(params);
-      if (_.isEmpty(result)) throw new Error('No Quarantine Order for the given contact number');
-
+      if (_.isEmpty(result)) {
+        throw new ApplicationError(`No Quarantine Order with this number, ${contactNumber}, to create OTP for`, 404);
+      }
       // 2. Generate OTP
       let otp;
       do {
         otp = crypto.randomBytes(3).toString('hex');
       }
       while (otp.match(/[a-z]/i));
-      console.log('generated', otp);
+      console.log(`Generated OTP ${otp} for ${contactNumber}`);
 
       // 3. Save OTP
       await db.Otp.create({
@@ -53,6 +55,9 @@ class OtpService {
         otp: bcrypt.hashSync(otp, SALT_ROUNDS),
       });
     } catch (err) {
+      if (err instanceof ApplicationError) {
+        throw err;
+      }
       throw new DbError(err);
     }
   }
