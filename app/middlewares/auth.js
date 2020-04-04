@@ -1,5 +1,10 @@
+// Imports
 const jwt = require('jsonwebtoken');
 
+// Errors
+const { InvalidAdminUserError } = require('../errors/AuthErrors');
+
+// Constants
 const { TOKEN_SIGNING_KEY } = process.env;
 
 function verifyJwt(isAdmin = false) {
@@ -18,8 +23,8 @@ function verifyJwt(isAdmin = false) {
     try {
       const tokenData = jwt.verify(signedToken, TOKEN_SIGNING_KEY);
       if (isAdmin) {
-        if (tokenData.role !== 'admin') {
-          throw new Error('Unable to verify that user is an admin');
+        if (tokenData.role !== 'admint') {
+          throw new InvalidAdminUserError();
         }
       } else {
         const { order_id: orderId } = tokenData;
@@ -35,7 +40,9 @@ function verifyJwt(isAdmin = false) {
       if (err instanceof jwt.JsonWebTokenError) {
         return res.status(400).send('Malformed JWT');
       }
-      return res.status(400).send(err.message);
+      if (err instanceof InvalidAdminUserError) {
+        return res.status(err.status).send(err.message);
+      }
     }
   };
 
