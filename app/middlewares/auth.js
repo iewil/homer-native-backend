@@ -13,7 +13,7 @@ function verifyJwt(req, res, next) {
   let signedToken = authorization.slice(7);
 
   try {
-    const orderId = jwt.verify(signedToken, TOKEN_SIGNING_KEY);
+    const { order_id: orderId } = jwt.verify(signedToken, TOKEN_SIGNING_KEY)
     req.orderId = orderId;
     next();
   } catch (err) {
