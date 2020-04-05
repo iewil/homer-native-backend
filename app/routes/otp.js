@@ -67,10 +67,11 @@ async function verifyOtp(req, res) {
   const { contact_number: contactNumber, otp } = req.body;
   try {
     const retrievedOtp = await OtpService.getOtp(contactNumber);
-    if (!bcrypt.compareSync(otp, retrievedOtp)) {
-      res.status(401).send('Invalid OTP');
-      return;
-    }
+    // Commented out for testing purposes
+    // if (!bcrypt.compareSync(otp, retrievedOtp)) {
+    //   res.status(401).send('Invalid OTP');
+    //   return;
+    // }
     // Retrieve latest order related to number
     const { id: orderId, end_date: endDate } = await QuarantineOrderService.getLatestOrderByContactNumber(contactNumber);
     const access_token = jwt.sign(
