@@ -37,12 +37,13 @@ app.use(express.json());
 // });
 
 // Import routes
-const healthReportsRouter = require('./routes/healthReports')
-const locationReportsRouter = require('./routes/locationReports')
-const ordersRouter = require('./routes/orders')
-const otpRouter = require('./routes/otp')
-const photosRouter = require('./routes/photos')
-const pushNotificationsRouter = require('./routes/pushNotifications')
+const pingRouter = require('./routes/ping');
+const healthReportsRouter = require('./routes/healthReports');
+const locationReportsRouter = require('./routes/locationReports');
+const ordersRouter = require('./routes/orders');
+const otpRouter = require('./routes/otp');
+const photosRouter = require('./routes/photos');
+const pushNotificationsRouter = require('./routes/pushNotifications');
 
 app.use(express.json({ limit: '10mb'}));
 app.use(express.urlencoded({ extended: false }));
@@ -53,6 +54,7 @@ app.use(cors({
 }));
 
 // Protected routes
+app.use('/ping', pingRouter);
 app.use('/health-reports', healthReportsRouter);
 app.use('/location-reports', locationReportsRouter);
 app.use('/push-notifications', pushNotificationsRouter);
