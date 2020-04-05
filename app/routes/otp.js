@@ -3,12 +3,26 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
+const Ajv = require('ajv');
 
+// Setup services
+const ajv = new Ajv();
 const router = express.Router();
 const OtpService = require('../services/OtpService');
 const QuarantineOrderService = require('../services/QuarantineOrderService');
 const AdminUserService = require('../services/AdminUserService');
 
+// Errors
+const { InputSchemaValidationError } = require('../errors/InputValidationErrors');
+
+// Validation schema
+const {
+  generateOtpSchema,
+  verifyOtpSchema,
+} = require('../validators/otp');
+
+
+// Constants
 const SALT_ROUNDS = 10;
 const { TOKEN_SIGNING_KEY } = process.env;
 const PHONE_NUMBER_REGEX = /^65[0-9]{8}$/;
@@ -51,17 +65,21 @@ const isAdminUser = (contact) => {
 async function generateOtp(req, res) {
   const { contact } = req.body;
   try {
-    // 0. Validate whether contact is a phone number or email
+    // 0. Validate request
+    const validRequest = ajv.validate(generateOtpSchema, req);
+    if (!validRequest) throw new InputSchemaValidationError(JSON.stringify(ajv.errors));
+
+    // 1. Validate whether contact is a phone number or email
     const isAdmin = isAdminUser(contact);
 
-    // 1. Check if user is on a quarantine order or admin user before issuing OTP
+    // 2. Check if user is on a quarantine order or admin user before issuing OTP
     if (isAdmin) {
       await AdminUserService.getUser(contact);
     } else {
       await QuarantineOrderService.getLatestOrderByContactNumber(contact);
     }
 
-    // 2. Generate OTP
+    // 3. Generate OTP
     let otp;
     do {
       otp = crypto.randomBytes(3).toString('hex');
@@ -71,7 +89,7 @@ async function generateOtp(req, res) {
 
     const hashedOtp = bcrypt.hashSync(otp, SALT_ROUNDS);
 
-    // 3. Save OTP to table
+    // 4. Save OTP to table
     let newOTP;
     if (isAdmin) {
       newOTP = {
@@ -115,7 +133,11 @@ async function generateOtp(req, res) {
 async function verifyOtp(req, res) {
   const { contact, otp } = req.body;
   try {
-    // 0. Verify whether contact is a phone number or email
+    // 0. Validate request
+    const validRequest = ajv.validate(verifyOtpSchema, req);
+    if (!validRequest) throw new InputSchemaValidationError(JSON.stringify(ajv.errors));
+
+    // 1. Verify whether contact is a phone number or email
     const isAdmin = isAdminUser(contact);
 
     // 1. Retrieve the OTP
@@ -126,9 +148,9 @@ async function verifyOtp(req, res) {
     //   return;
     // }
 
-    // 2. If quarantine order, retrieve latest order linked to phone number
-    // and assign orderId to the access token. If admin user, just assign the role
-    // admin.
+    // 3. If quarantine order, retrieve latest order linked to phone number
+    // and assign orderId and user role to the access token.
+    // If admin user, just assign the role admin.
     let accessTokenParams;
     if (isAdmin) {
       const adminExpiry = new Date();
@@ -152,7 +174,7 @@ async function verifyOtp(req, res) {
       };
     }
 
-    // 3. Sign the access token
+    // 4. Sign the access token
     const accessToken = jwt.sign(accessTokenParams, TOKEN_SIGNING_KEY);
     res.status(200).send({ access_token: accessToken });
   } catch (err) {
