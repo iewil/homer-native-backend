@@ -2,7 +2,7 @@
 const AWS = require('aws-sdk');
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
-const Bluebird = require('bluebird')
+const Bluebird = require('bluebird');
 
 // Express
 const router = express.Router();
@@ -54,13 +54,13 @@ async function obtainS3UploadLink(req, res) {
       Expires: LINK_EXPIRY,
     };
 
-    const getSignedUrlPromisified = Bluebird.promisify(s3.getSignedUrl.bind(s3))
-    const preSignedUrl = await getSignedUrlPromisified('putObject', params)
-    
+    const getSignedUrlPromisified = Bluebird.promisify(s3.getSignedUrl.bind(s3));
+    const preSignedUrl = await getSignedUrlPromisified('putObject', params);
+
     res.status(200).send({
       photo_s3_key: photoS3Key,
       presigned_url: preSignedUrl,
-    })
+    });
   } catch (err) {
     res.status(500).send(err.message);
   }
