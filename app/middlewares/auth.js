@@ -23,7 +23,7 @@ function verifyJwt(isAdmin = false) {
     try {
       const tokenData = jwt.verify(signedToken, TOKEN_SIGNING_KEY);
       if (isAdmin) {
-        if (tokenData.role !== 'admint') {
+        if (tokenData.role !== 'admin') {
           throw new InvalidAdminUserError();
         }
       } else {
