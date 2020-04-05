@@ -12,28 +12,26 @@ const AdminUserService = require('../services/AdminUserService');
 const SALT_ROUNDS = 10;
 const { TOKEN_SIGNING_KEY } = process.env;
 const PHONE_NUMBER_REGEX = /^65[0-9]{8}$/;
-const GOV_SG_EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.+-]+\.gov.sg$/;
+// (?!.*\.\.) is a negative lookahead that prevents against consecutive dot characters
+// (?!.*_from\.) is a negative lookahead that prevents against "_from." format of contractor emails
+// ([a-z0-9._]+) checks that the username preceding the @ character is formed of one or more lower
+// case alphabet/number/dot/underscore characters
+// ([a-z.]+).gov.sg$ checks that the domain ends with .gov.sg and only contains lower case alphabets
+// and dot characters
+const GOV_SG_EMAIL_REGEX = /(?!.*\.\.)(?!.*_from\.)^([a-z0-9._]+)@([a-z.]+).gov.sg$/;
 const ADMIN_USER_TOKEN_EXPIRY = 7; // 1 week in number of days
 
-const checkAdminUser = (contact) => {
+const isAdminUser = (contact) => {
   let isAdmin;
-  let email;
-  let contactNumber;
 
   if (contact.match(PHONE_NUMBER_REGEX)) {
     isAdmin = false;
-    contactNumber = contact;
   } else if (contact.match(GOV_SG_EMAIL_REGEX)) {
     isAdmin = true;
-    email = contact;
   } else {
     throw new Error('Provided contact must be either a gov.sg email or a phone number');
   }
-  return {
-    isAdmin,
-    email,
-    contactNumber,
-  };
+  return isAdmin;
 };
 
 /**
@@ -54,17 +52,13 @@ async function generateOtp(req, res) {
   const { contact } = req.body;
   try {
     // 0. Validate whether contact is a phone number or email
-    const {
-      isAdmin,
-      email,
-      contactNumber,
-    } = checkAdminUser(contact);
+    const isAdmin = isAdminUser(contact);
 
     // 1. Check if user is on a quarantine order or admin user before issuing OTP
     if (isAdmin) {
-      await AdminUserService.getUser(email);
+      await AdminUserService.getUser(contact);
     } else {
-      await QuarantineOrderService.getLatestOrderByContactNumber(contactNumber);
+      await QuarantineOrderService.getLatestOrderByContactNumber(contact);
     }
 
     // 2. Generate OTP
@@ -78,11 +72,22 @@ async function generateOtp(req, res) {
     const hashedOtp = bcrypt.hashSync(otp, SALT_ROUNDS);
 
     // 3. Save OTP to table
-    await OtpService.saveOtp({
-      contactNumber,
-      email,
-      hashedOtp,
-    });
+    let newOTP;
+    if (isAdmin) {
+      newOTP = {
+        contactNumber: null,
+        email: contact,
+        hashedOtp,
+      };
+    } else {
+      newOTP = {
+        contactNumber: contact,
+        email: null,
+        hashedOtp,
+      };
+    }
+
+    await OtpService.saveOtp(newOTP);
 
     res.status(200).send({ message: 'OTP created' });
   } catch (err) {
@@ -111,10 +116,7 @@ async function verifyOtp(req, res) {
   const { contact, otp } = req.body;
   try {
     // 0. Verify whether contact is a phone number or email
-    const {
-      isAdmin,
-      contactNumber,
-    } = checkAdminUser(contact);
+    const isAdmin = isAdminUser(contact);
 
     // 1. Retrieve the OTP
     // Commented out for testing purposes
@@ -133,14 +135,16 @@ async function verifyOtp(req, res) {
       adminExpiry.setDate(adminExpiry.getDate() + ADMIN_USER_TOKEN_EXPIRY);
       accessTokenParams = {
         role: 'admin',
+        email: contact,
         exp: (adminExpiry / 1000), // expiry of JWT in seconds
       };
     } else {
       const {
         id: orderId,
         end_date: endDate,
-      } = await QuarantineOrderService.getLatestOrderByContactNumber(contactNumber);
+      } = await QuarantineOrderService.getLatestOrderByContactNumber(contact);
       accessTokenParams = {
+        role: 'user',
         order_id: orderId,
         // Reason why we divide it by 1000:
         // https://github.com/auth0/node-jsonwebtoken#token-expiration-exp-claim
