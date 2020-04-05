@@ -11,6 +11,7 @@ const generateOtpSchema = {
       required: ['contact'],
     },
   },
+  required: ['body'],
 };
 
 const verifyOtpSchema = {
@@ -29,6 +30,7 @@ const verifyOtpSchema = {
       required: ['contact', 'otp'],
     },
   },
+  required: ['body'],
 };
 
 module.exports = {
