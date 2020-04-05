@@ -37,24 +37,15 @@ app.use(express.json());
 // });
 
 // Import routes
-const healthReportsRouter = require('./routes/healthReports');
-const locationReportsRouter = require('./routes/locationReports');
-const ordersRouter = require('./routes/orders');
-const otpRouter = require('./routes/otp');
-const photosRouter = require('./routes/photos');
-const pushNotificationsRouter = require('./routes/pushNotifications');
+const healthReportsRouter = require('./routes/healthReports')
+const locationReportsRouter = require('./routes/locationReports')
+const ordersRouter = require('./routes/orders')
+const otpRouter = require('./routes/otp')
+const photosRouter = require('./routes/photos')
+const pushNotificationsRouter = require('./routes/pushNotifications')
 
 app.use(express.json({ limit: '10mb'}));
 app.use(express.urlencoded({ extended: false }));
-
-// Ping for application load balancer health check
-app.use((req, res, next) => {
-  if (req.url === '/ping') {
-    res.status(200).json({ message: 'pong' });
-  } else {
-    next();
-  }
-});
 
 app.use(cors({
   origin: '*',
