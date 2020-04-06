@@ -26,11 +26,14 @@ const {
   verifyOtpSchema,
 } = require('../validators/otp');
 
+// Email client
+const { sendOtpEmail } = require('../utils/email');
 
 // Constants
 const SALT_ROUNDS = 10;
 const { TOKEN_SIGNING_KEY } = process.env;
 const PHONE_NUMBER_REGEX = /^65[0-9]{8}$/;
+const ADMIN_USER_TOKEN_EXPIRY = 7; // 1 week in number of days
 // (?!.*\.\.) is a negative lookahead that prevents against consecutive dot characters
 // (?!.*_from\.) is a negative lookahead that prevents against "_from." format of contractor emails
 // ([a-z0-9._]+) checks that the username preceding the @ character is formed of one or more lower
@@ -38,7 +41,6 @@ const PHONE_NUMBER_REGEX = /^65[0-9]{8}$/;
 // ([a-z.]+).gov.sg$ checks that the domain ends with .gov.sg and only contains lower case alphabets
 // and dot characters
 const GOV_SG_EMAIL_REGEX = /(?!.*\.\.)(?!.*_from\.)^([a-z0-9._]+)@([a-z.]+).gov.sg$/;
-const ADMIN_USER_TOKEN_EXPIRY = 7; // 1 week in number of days
 
 const validateEmail = async (email) => {
   const result = email.match(GOV_SG_EMAIL_REGEX);
@@ -112,6 +114,8 @@ async function generateOtp(req, res) {
     };
 
     await OtpService.saveOtp(newOTP);
+
+    if (email) await sendOtpEmail(email, otp);
 
     res.status(200).send({ message: 'OTP created' });
   } catch (err) {
