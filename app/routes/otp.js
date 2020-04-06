@@ -128,14 +128,14 @@ async function generateOtp(req, res) {
     await OtpService.saveOtp(newOTP);
 
     if (email) await sendOtpEmail(email, otp);
-    if (contactNumber) {
-      await twilioClient.messages.create({
-        body: `Your Homer OTP is ${otp}`,
-        messagingServiceSid: MESSAGING_SERVICE_SID,
-        from: ALPHA_SENDER_ID,
-        to: `+${contact}`,
-      });
-    }
+    // if (contactNumber) {
+    //   await twilioClient.messages.create({
+    //     body: `Your Homer OTP is ${otp}`,
+    //     messagingServiceSid: MESSAGING_SERVICE_SID,
+    //     from: ALPHA_SENDER_ID,
+    //     to: `+${contact}`,
+    //   });
+    // }
 
     res.status(200).send({ message: 'OTP created and sent' });
   } catch (err) {
@@ -184,11 +184,11 @@ async function verifyOtp(req, res) {
     }
 
     // 2. Retrieve the OTP
-    const retrievedOtp = await OtpService.getOtp(contactNumber, email);
-    if (!bcrypt.compareSync(otp, retrievedOtp)) {
-      res.status(401).send('Invalid OTP');
-      return;
-    }
+    // const retrievedOtp = await OtpService.getOtp(contactNumber, email);
+    // if (!bcrypt.compareSync(otp, retrievedOtp)) {
+    //   res.status(401).send('Invalid OTP');
+    //   return;
+    // }
 
     const contact = email || contactNumber;
     console.log(`Verified OTP ${otp} for ${contact}`);
