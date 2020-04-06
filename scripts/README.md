@@ -19,7 +19,7 @@ Manually send notifications for quarantine orders on Homer
   - define sms message for photo ping
   - send push notifications
   - send smses
-- 03b_send_health_report.js
+- 03c_send_health_report.js
   - define push notification message for health report ping
   - define sms message for health report ping
   - send push notifications
