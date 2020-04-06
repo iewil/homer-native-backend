@@ -5,7 +5,6 @@ const router = express.Router();
 
 // Middlewares
 const Ajv = require('ajv');
-const { verifyJwt } = require('../middlewares/auth');
 
 // Services
 const { HealthReportService } = require('../services/HealthReportService');
@@ -87,6 +86,6 @@ async function createHealthReport(req, res) {
 }
 
 router.get('/:order_id', getHealthReports);
-router.post('/', verifyJwt, createHealthReport);
+router.post('/', createHealthReport);
 
 module.exports = router;

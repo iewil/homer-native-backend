@@ -5,7 +5,6 @@ const router = express.Router();
 
 // Middlewares
 const Ajv = require('ajv');
-const { verifyJwt } = require('../middlewares/auth');
 
 // Services
 const { LocationReportService } = require('../services/LocationReportService');
@@ -70,6 +69,6 @@ async function createLocationReport(req, res) {
 }
 
 router.get('/:order_id', getLocationReports);
-router.post('/', verifyJwt, createLocationReport);
+router.post('/', createLocationReport);
 
 module.exports = router;

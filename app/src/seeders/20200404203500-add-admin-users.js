@@ -4,13 +4,13 @@ module.exports = {
     [
       {
         id: 1,
-        email: 'test@some-agency.gov.sg',
+        email: 'test@agency.gov.sg',
         createdAt: new Date(),
         updatedAt: new Date(),
       },
       {
         id: 2,
-        email: 'homer@some-agency.gov.sg',
+        email: 'homer@agency.gov.sg',
         createdAt: new Date(),
         updatedAt: new Date(),
       },
