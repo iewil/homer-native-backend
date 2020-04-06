@@ -37,8 +37,9 @@ function verifyJwt (req, res, next) {
         throw new InvalidAdminUserError();
       }
     } else {
-      const { order_id: orderId } = tokenData;
+      const { order_id: orderId, role} = tokenData;
       req.orderId = orderId;
+      req.role = role;
     }
     next();
   } catch (err) {
