@@ -82,7 +82,9 @@ async function generateOtp(req, res) {
     if (!validRequest) throw new InputSchemaValidationError(JSON.stringify(ajv.errors));
 
     // 1. Validate email or contact number
-    if (contactNumber) {
+    if (contactNumber && email) {
+      throw new OtpGenerationMalformedRequestError();
+    } else if (contactNumber) {
       await validateContactNumber(contactNumber);
     } else if (email) {
       await validateEmail(email);
@@ -146,7 +148,9 @@ async function verifyOtp(req, res) {
     if (!validRequest) throw new InputSchemaValidationError(JSON.stringify(ajv.errors));
 
     // 1. Validate email or contact number
-    if (contactNumber) {
+    if (contactNumber && email) {
+      throw new OtpGenerationMalformedRequestError();
+    } else if (contactNumber) {
       await validateContactNumber(contactNumber);
     } else if (email) {
       await validateEmail(email);

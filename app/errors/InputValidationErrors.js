@@ -9,7 +9,7 @@ class InputSchemaValidationError extends ApplicationError {
 
 class OtpGenerationMalformedRequestError extends ApplicationError {
   constructor() {
-    super('The request body for OTP generation must contain either an email or a phone number', 400);
+    super('The request body for OTP generation must contain either an email or a phone number, but not both!', 400);
   }
 }
 
