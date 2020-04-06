@@ -18,6 +18,28 @@ const firebaseCredentialsSecretName = 'homer-native-firebase-credentials';
 
 const db = require('./src/models')
 const { verifyJwt } = require('./middlewares/auth')
+const _ = require('lodash')
+
+let requiredEnvVars = [
+  'ALPHA_SENDER_ID',
+  'MESSAGING_SERVICE_SID',
+  'NODE_ENV',
+  'PHOTO_BUCKET_NAME',
+  'TOKEN_SIGNING_KEY',
+  'TWILIO_ACCOUNT_SID',
+  'TWILIO_AUTH_TOKEN'
+]
+if (env === 'staging' || env === 'production') {
+  requiredEnvVars.push('DB_HOST', 'DB_NAME', 'DB_PASS', 'DB_PORT', 'DB_USER')
+} else {
+  requiredEnvVars.push('DB_URL')
+}
+
+let envVars = _.keys(process.env)
+let missingEnvVars = _.difference(requiredEnvVars, envVars)
+if (!_.isEmpty(missingEnvVars)) {
+  throw new Error(`'Missing environment variables: ${_.toString(missingEnvVars)}`)
+}
 
 const app = express();
 app.use(express.json());
