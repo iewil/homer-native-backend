@@ -1,8 +1,20 @@
+// Utility modules
+const jsonfile = require('jsonfile')
+
 const express = require('express');
 const cors = require('cors');
 
 const { PORT } = process.env;
 const env = process.env.NODE_ENV ? process.env.NODE_ENV : 'development'
+
+// Create a Secrets Manager client
+const AWS = require('aws-sdk');
+
+const AWS_REGION = 'ap-southeast-1';
+const secretsClient = new AWS.SecretsManager({
+  region: AWS_REGION,
+});
+const firebaseCredentialsSecretName = 'homer-native-firebase-credentials';
 
 const db = require('./src/models')
 const { verifyJwt } = require('./middlewares/auth')
@@ -43,7 +55,6 @@ const locationReportsRouter = require('./routes/locationReports')
 const ordersRouter = require('./routes/orders')
 const otpRouter = require('./routes/otp')
 const photosRouter = require('./routes/photos')
-const pushNotificationsRouter = require('./routes/pushNotifications')
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false }));
@@ -64,13 +75,42 @@ app.use(verifyJwt);
 // Protected routes
 app.use('/health-reports', healthReportsRouter);
 app.use('/location-reports', locationReportsRouter);
-app.use('/push-notifications', pushNotificationsRouter);
 app.use('/orders', ordersRouter);
 app.use('/photos', photosRouter);
 
-db.sequelize.sync().then(() => {
-  console.log(`DB connection successful, env: ${env}`)
+async function loadFirebaseCredentials() {
+  try {
+    const secret = await secretsClient.getSecretValue({
+      SecretId: firebaseCredentialsSecretName,
+    }).promise();
+    const firebaseCredentialLocation = './app/services/NotificationService/firebase-service-account.json';
+    jsonfile.writeFileSync(
+      firebaseCredentialLocation,
+      JSON.parse(secret.SecretString),
+      { spaces: 2 },
+    );
+  } catch (error) {
+    console.log('error occured while trying to load firebase secret', error);
+    throw error;
+  }
+}
+
+async function startServer() {
+  // Connect to db
+  await db.sequelize.sync();
+  console.log(`DB connection successful, env: ${env}`);
+
+  // Load firebase credentials
+  await loadFirebaseCredentials();
+
+  // Bind the push notification route
+  const pushNotificationsRouter = require('./routes/pushNotifications');
+  app.use('/push-notifications', pushNotificationsRouter);
+
+  // Start the server by listening
   app.listen(PORT, () => console.log(`Native Homer backend app listening on port ${PORT}`));
-})
+}
+
+startServer();
 
 module.exports = app;

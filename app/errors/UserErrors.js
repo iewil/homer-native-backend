@@ -6,6 +6,13 @@ class UserNotFoundError extends ApplicationError {
   }
 }
 
+class PushNotificationNotFoundError extends ApplicationError {
+  constructor(orderId) {
+    super(`Push notification id not found for Order ${orderId}`, 404);
+  }
+}
+
 module.exports = {
   UserNotFoundError,
+  PushNotificationNotFoundError,
 };
