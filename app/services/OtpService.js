@@ -29,8 +29,9 @@ class OtpService {
    * This fetches the latest OTP associated to the given `contactNumber`
    * or email and within the 15 minute expiry time
    * @param {String} contactNumber - User's contact number
+   * @param {String} email - User's email address
    */
-  static async getOtp(contact, isAdmin) {
+  static async getOtp(contactNumber, email) {
     const params = {
       where: {
         createdAt: { // Get OTP that is within 15min of validity
@@ -40,10 +41,10 @@ class OtpService {
       order: [['createdAt', 'DESC']],
     };
 
-    if (isAdmin) {
-      params.where.email = contact;
+    if (email) {
+      params.where.email = email;
     } else {
-      params.where.contact_number = contact;
+      params.where.contact_number = contactNumber;
     }
 
     try {

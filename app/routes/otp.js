@@ -13,7 +13,12 @@ const QuarantineOrderService = require('../services/QuarantineOrderService');
 const AdminUserService = require('../services/AdminUserService');
 
 // Errors
-const { InputSchemaValidationError } = require('../errors/InputValidationErrors');
+const {
+  InputSchemaValidationError,
+  OtpGenerationMalformedRequestError,
+  InvalidContactNumberError,
+  InvalidGovSgEmailError,
+} = require('../errors/InputValidationErrors');
 
 // Validation schema
 const {
@@ -35,17 +40,24 @@ const PHONE_NUMBER_REGEX = /^65[0-9]{8}$/;
 const GOV_SG_EMAIL_REGEX = /(?!.*\.\.)(?!.*_from\.)^([a-z0-9._]+)@([a-z.]+).gov.sg$/;
 const ADMIN_USER_TOKEN_EXPIRY = 7; // 1 week in number of days
 
-const isAdminUser = (contact) => {
-  let isAdmin;
-
-  if (contact.match(PHONE_NUMBER_REGEX)) {
-    isAdmin = false;
-  } else if (contact.match(GOV_SG_EMAIL_REGEX)) {
-    isAdmin = true;
-  } else {
-    throw new Error('Provided contact must be either a gov.sg email or a phone number');
+const validateEmail = async (email) => {
+  const result = email.match(GOV_SG_EMAIL_REGEX);
+  if (!result) {
+    throw new InvalidGovSgEmailError();
   }
-  return isAdmin;
+
+  // Verify that email provided is a valid user
+  await AdminUserService.getUser(email);
+};
+
+const validateContactNumber = async (contactNumber) => {
+  const result = contactNumber.match(PHONE_NUMBER_REGEX);
+  if (!result) {
+    throw new InvalidContactNumberError();
+  }
+
+  // Verify that contact number provided has a valid quarantine order
+  await QuarantineOrderService.getLatestOrderByContactNumber(contactNumber);
 };
 
 /**
@@ -63,47 +75,39 @@ const isAdminUser = (contact) => {
  * No Quarantine Order found for this number
  */
 async function generateOtp(req, res) {
-  const { contact } = req.body;
+  const { contact_number: contactNumber, email } = req.body;
   try {
     // 0. Validate request
     const validRequest = ajv.validate(generateOtpSchema, req);
     if (!validRequest) throw new InputSchemaValidationError(JSON.stringify(ajv.errors));
 
-    // 1. Validate whether contact is a phone number or email
-    const isAdmin = isAdminUser(contact);
-
-    // 2. Check if user is on a quarantine order or admin user before issuing OTP
-    if (isAdmin) {
-      await AdminUserService.getUser(contact);
+    // 1. Validate email or contact number
+    if (contactNumber) {
+      await validateContactNumber(contactNumber);
+    } else if (email) {
+      await validateEmail(email);
     } else {
-      await QuarantineOrderService.getLatestOrderByContactNumber(contact);
+      throw new OtpGenerationMalformedRequestError();
     }
 
-    // 3. Generate OTP
+    // 2. Generate OTP
     let otp;
     do {
       otp = crypto.randomBytes(3).toString('hex');
     }
     while (otp.match(/[a-z]/i));
+
+    const contact = email || contactNumber;
     console.log(`Generated OTP ${otp} for ${contact}`);
 
     const hashedOtp = bcrypt.hashSync(otp, SALT_ROUNDS);
 
-    // 4. Save OTP to table
-    let newOTP;
-    if (isAdmin) {
-      newOTP = {
-        contactNumber: null,
-        email: contact,
-        hashedOtp,
-      };
-    } else {
-      newOTP = {
-        contactNumber: contact,
-        email: null,
-        hashedOtp,
-      };
-    }
+    // 3. Save OTP to table
+    const newOTP = {
+      contactNumber,
+      email,
+      hashedOtp,
+    };
 
     await OtpService.saveOtp(newOTP);
 
@@ -131,40 +135,52 @@ async function generateOtp(req, res) {
  * Invalid OTP
  */
 async function verifyOtp(req, res) {
-  const { contact, otp } = req.body;
+  const {
+    contact_number: contactNumber,
+    email,
+    otp,
+  } = req.body;
   try {
     // 0. Validate request
     const validRequest = ajv.validate(verifyOtpSchema, req);
     if (!validRequest) throw new InputSchemaValidationError(JSON.stringify(ajv.errors));
 
-    // 1. Verify whether contact is a phone number or email
-    const isAdmin = isAdminUser(contact);
+    // 1. Validate email or contact number
+    if (contactNumber) {
+      await validateContactNumber(contactNumber);
+    } else if (email) {
+      await validateEmail(email);
+    } else {
+      throw new OtpGenerationMalformedRequestError();
+    }
 
-    // 1. Retrieve the OTP
-    // Commented out for testing purposes
-    // const retrievedOtp = await OtpService.getOtp(contact, isAdmin);
-    // if (!bcrypt.compareSync(otp, retrievedOtp)) {
-    //   res.status(401).send('Invalid OTP');
-    //   return;
-    // }
+    // 2. Retrieve the OTP
+    const retrievedOtp = await OtpService.getOtp(contactNumber, email);
+    if (!bcrypt.compareSync(otp, retrievedOtp)) {
+      res.status(401).send('Invalid OTP');
+      return;
+    }
+
+    const contact = email || contactNumber;
+    console.log(`Verified OTP ${otp} for ${contact}`);
 
     // 3. If quarantine order, retrieve latest order linked to phone number
     // and assign orderId and user role to the access token.
     // If admin user, just assign the role admin.
     let accessTokenParams;
-    if (isAdmin) {
+    if (email) {
       const adminExpiry = new Date();
       adminExpiry.setDate(adminExpiry.getDate() + ADMIN_USER_TOKEN_EXPIRY);
       accessTokenParams = {
         role: 'admin',
-        email: contact,
+        email,
         exp: (adminExpiry / 1000), // expiry of JWT in seconds
       };
-    } else {
+    } else if (contactNumber) {
       const {
         id: orderId,
         end_date: endDate,
-      } = await QuarantineOrderService.getLatestOrderByContactNumber(contact);
+      } = await QuarantineOrderService.getLatestOrderByContactNumber(contactNumber);
       accessTokenParams = {
         role: 'user',
         order_id: orderId,

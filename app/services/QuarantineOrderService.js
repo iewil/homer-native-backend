@@ -8,9 +8,9 @@ const { DbError } = require('../errors/DbErrors');
 class QuarantineOrderService {
   static async createOrder(newOrder) {
     try {
-      return await db.QuarantineOrders.create(newOrder)
+      return await db.QuarantineOrders.create(newOrder);
     } catch (err) {
-      throw new DbError(err)
+      throw new DbError(err);
     }
   }
 
@@ -20,19 +20,23 @@ class QuarantineOrderService {
       const params = {
         where: {
           id: orderId,
-        }
+        },
+      };
+      const result = await db.QuarantineOrders.findOne(params);
+      if (_.isEmpty(result)) {
+        throw new ApplicationError(`No users were found for this order, ${orderId}`, 404);
       }
-      return await db.QuarantineOrders.findOne(params)
+      return result;
     } catch (err) {
-      throw new DbError(err)
+      throw new DbError(err);
     }
   }
 
   static async getAllOrders() {
     try {
-      return await db.QuarantineOrders.findAll()
+      return await db.QuarantineOrders.findAll();
     } catch (err) {
-      throw new DbError(err)
+      throw new DbError(err);
     }
   }
 

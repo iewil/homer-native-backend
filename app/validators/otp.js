@@ -4,11 +4,13 @@ const generateOtpSchema = {
     body: {
       type: 'object',
       properties: {
-        contact: {
+        contact_number: {
+          type: 'string',
+        },
+        email: {
           type: 'string',
         },
       },
-      required: ['contact'],
     },
   },
   required: ['body'],
@@ -20,14 +22,17 @@ const verifyOtpSchema = {
     body: {
       type: 'object',
       properties: {
-        contact: {
+        contact_number: {
+          type: 'string',
+        },
+        email: {
           type: 'string',
         },
         otp: {
           type: 'string',
         },
       },
-      required: ['contact', 'otp'],
+      required: ['otp'],
     },
   },
   required: ['body'],
