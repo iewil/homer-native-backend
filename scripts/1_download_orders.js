@@ -28,7 +28,6 @@ async function main () {
     qos,
     { spaces: 2 },
   );
-
 }
 
 main()
