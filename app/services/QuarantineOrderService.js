@@ -6,6 +6,36 @@ const ApplicationError = require('../errors/BaseError');
 const { DbError } = require('../errors/DbErrors');
 
 class QuarantineOrderService {
+  static async createOrder(newOrder) {
+    try {
+      return await db.QuarantineOrders.create(newOrder)
+    } catch (err) {
+      throw new DbError(err)
+    }
+  }
+
+
+  static async getOrderById(orderId) {
+    try {
+      const params = {
+        where: {
+          id: orderId,
+        }
+      }
+      return await db.QuarantineOrders.findOne(params)
+    } catch (err) {
+      throw new DbError(err)
+    }
+  }
+
+  static async getAllOrders() {
+    try {
+      return await db.QuarantineOrders.findAll()
+    } catch (err) {
+      throw new DbError(err)
+    }
+  }
+
   static async getLatestOrderByContactNumber(contactNumber) {
     // 1. Find if a quarantine order exists for the given contact number
     const params = {
@@ -37,6 +67,37 @@ class QuarantineOrderService {
         throw err;
       }
       throw new DbError('Db Error', err);
+    }
+  }
+
+  static async updateOrder(orderId, updatedOrder) {
+    try {
+      const params = {
+        where: {
+          id: orderId
+        }
+      }
+      return await db.QuarantineOrders.update(updatedOrder, params)
+    } catch (err) {
+      throw new DbError(err)
+    }
+  }
+
+  static async invalidateOrder(orderId) {
+    try {
+      const params = {
+        where: {
+          id: orderId
+        }
+      }
+      // Invalidate order by setting start and end date to start of unix epoch
+      const invalidDate = new Date('1970-01-01')
+      return await db.QuarantineOrders.update({
+        start_date: invalidDate,
+        end_date: invalidDate
+      }, params)
+    } catch (err) {
+      throw new DbError(err)
     }
   }
 }

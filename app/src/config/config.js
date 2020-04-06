@@ -8,7 +8,12 @@ module.exports = {
     // username: 'example',
     // password: null,
     // host: '127.0.0.1',
-    dialect: 'postgres'
+    dialect: 'postgres',
+    dialectOptions: {
+      useUTC: false, // for reading from database,
+      timezone: '+08:00'
+    },
+    timezone: '+08:00' // for writing to database
   },
 
   test: {
@@ -28,8 +33,11 @@ module.exports = {
     dialect: 'postgres',
     dialectOption: {
       // ssl: true,
-      native: true
+      native: true,
+      useUTC: false, // for reading from database
+      timezone: '+08:00'
     },
+    timezone: '+08:00', // for writing to database
     logging: true
   },
 
@@ -42,8 +50,11 @@ module.exports = {
     dialect: 'postgres',
     dialectOption: {
       // ssl: true,
-      native: true
+      native: true,
+      useUTC: false, // for reading from database
+      timezone: '+08:00'
     },
+    timezone: '+08:00', // for writing to database
     logging: true
   }
 }
