@@ -11,23 +11,23 @@ async function main () {
   console.log('connected to the db...')
 
   // get all quarantine orders
-  console.log(`Retrieving QOs from db from QuarantineOrders model...`)
-  let count
-  let qos
+  console.log('Retrieving QOs from db from QuarantineOrders model...')
+  let result
   try {
-    { count, rows: qos } = await models.QuarantineOrders.findAndCountAll({})
+    result = await db.QuarantineOrders.findAndCountAll({})
   } catch (error) {
     console.log('Error occoured while retrieving quarantine orders:', error)
     throw error
   }
+  let { count, rows: qos } = result
   console.log(`Total quarantine orders: ${count}`)
   console.log(`Writing to ${OUTPUT_FILE}...`)
-  qos = qos.map(qo => ({ id: qo.id, contact_number: qo.contact_number }))
+  qos = qos.map((qo) => ({ id: qo.id, contact_number: qo.contact_number }))
   jsonfile.writeFileSync(
     OUTPUT_FILE,
     qos,
-    { spaces: 2 },
-  );
+    { spaces: 2 }
+  )
 }
 
 main()
