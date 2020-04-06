@@ -1,34 +1,60 @@
+// Imports
 const jwt = require('jsonwebtoken');
 
+// Errors
+const { InvalidAdminUserError } = require('../errors/AuthErrors');
+
+// Constants
 const { TOKEN_SIGNING_KEY } = process.env;
 
-function checkToken(req, res, next) {
-  let signedToken = req.headers.authorization;
+const adminOnlyRoute = ['/orders']
 
-  if (!signedToken || !signedToken.startsWith('Bearer ')) {
-    res.status(401).send('Unauthorized');
+function verifyJwt (req, res, next) {
+  const { authorization } = req.headers;
+
+  if (!authorization || !authorization.startsWith('Bearer ')) {
+    return res.status(401).send('Unauthorized');
   }
 
-  // Remove 'Bearer '
-  signedToken = signedToken.slice(7);
+  // Remove 'Bearer ' from authorization header
+  const signedToken = authorization.slice(7);
+
+  // Extract baseUrl from req
+  // Express req.baseUrl is not available in middleware
+  const startIdx = 0
+  let endIdx = startIdx + 1
+  while (req.originalUrl[endIdx] !== '/' && endIdx < req.originalUrl.length) {
+    endIdx++
+  }
+  req.baseUrl = req.originalUrl.slice(startIdx, endIdx)
+
+  const isAdminOnlyPath = adminOnlyRoute.includes(req.baseUrl)
 
   try {
-    const user = jwt.verify(signedToken, TOKEN_SIGNING_KEY);
-    req.user = user;
+    const tokenData = jwt.verify(signedToken, TOKEN_SIGNING_KEY);
+    if (isAdminOnlyPath) {
+      if (tokenData.role !== 'admin') {
+        throw new InvalidAdminUserError();
+      }
+    } else {
+      const { order_id: orderId, role} = tokenData;
+      req.orderId = orderId;
+      req.role = role;
+    }
     next();
   } catch (err) {
+    console.error('Error authenticating', err, JSON.stringify(req.headers));
+
     if (err instanceof jwt.TokenExpiredError) {
-      res.status(401).send('Token expired');
-      return;
+      return res.status(401).send('Token expired');
     }
     if (err instanceof jwt.JsonWebTokenError) {
-      res.status(400).send('Malformed JWT');
-      return;
+      return res.status(400).send('Malformed JWT');
     }
-
-    console.log('Error authenticating', err, JSON.stringify(req.headers));
-    res.status(500).send('Unhandled error, check logs');
+    if (err instanceof InvalidAdminUserError) {
+      return res.status(err.status).send(err.message);
+    }
   }
-}
+};
 
-module.exports = checkToken;
+module.exports = { verifyJwt };

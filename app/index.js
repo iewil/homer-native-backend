@@ -1,7 +1,45 @@
+// Utility modules
+const jsonfile = require('jsonfile')
+
 const express = require('express');
 const cors = require('cors');
 
 const { PORT } = process.env;
+const env = process.env.NODE_ENV ? process.env.NODE_ENV : 'development'
+
+// Create a Secrets Manager client
+const AWS = require('aws-sdk');
+
+const AWS_REGION = 'ap-southeast-1';
+const secretsClient = new AWS.SecretsManager({
+  region: AWS_REGION,
+});
+const firebaseCredentialsSecretName = 'homer-native-firebase-credentials';
+
+const db = require('./src/models')
+const { verifyJwt } = require('./middlewares/auth')
+const _ = require('lodash')
+
+let requiredEnvVars = [
+  'ALPHA_SENDER_ID',
+  'MESSAGING_SERVICE_SID',
+  'NODE_ENV',
+  'PHOTO_BUCKET_NAME',
+  'TOKEN_SIGNING_KEY',
+  'TWILIO_ACCOUNT_SID',
+  'TWILIO_AUTH_TOKEN'
+]
+if (env === 'staging' || env === 'production') {
+  requiredEnvVars.push('DB_HOST', 'DB_NAME', 'DB_PASS', 'DB_PORT', 'DB_USER')
+} else {
+  requiredEnvVars.push('DB_URL')
+}
+
+let envVars = _.keys(process.env)
+let missingEnvVars = _.difference(requiredEnvVars, envVars)
+if (!_.isEmpty(missingEnvVars)) {
+  throw new Error(`'Missing environment variables: ${_.toString(missingEnvVars)}`)
+}
 
 const app = express();
 app.use(express.json());
@@ -39,24 +77,62 @@ const locationReportsRouter = require('./routes/locationReports')
 const ordersRouter = require('./routes/orders')
 const otpRouter = require('./routes/otp')
 const photosRouter = require('./routes/photos')
-const pushNotificationsRouter = require('./routes/pushNotifications')
 
-app.use(express.json({ limit: '10mb'}));
+app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false }));
 
+// For ELB health check
+app.get('/ping', (req, res) => res.status(200).json({ message: 'pong' }));
+
 app.use(cors({
-  'origin': '*',
-  'credentials': true,
+  origin: '*',
+  credentials: true,
 }));
+
+app.use('/otp', otpRouter);
+
+// Auth middleware
+app.use(verifyJwt);
 
 // Protected routes
 app.use('/health-reports', healthReportsRouter);
 app.use('/location-reports', locationReportsRouter);
-app.use('/push-notifications', pushNotificationsRouter);
 app.use('/orders', ordersRouter);
-app.use('/otp', otpRouter);
 app.use('/photos', photosRouter);
 
-app.listen(PORT, () => console.log(`Native Homer backend app listening on port ${PORT}`));
+async function loadFirebaseCredentials() {
+  try {
+    const secret = await secretsClient.getSecretValue({
+      SecretId: firebaseCredentialsSecretName,
+    }).promise();
+    const firebaseCredentialLocation = './app/services/NotificationService/firebase-service-account.json';
+    jsonfile.writeFileSync(
+      firebaseCredentialLocation,
+      JSON.parse(secret.SecretString),
+      { spaces: 2 },
+    );
+  } catch (error) {
+    console.log('error occured while trying to load firebase secret', error);
+    throw error;
+  }
+}
+
+async function startServer() {
+  // Connect to db
+  await db.sequelize.sync();
+  console.log(`DB connection successful, env: ${env}`);
+
+  // Load firebase credentials
+  await loadFirebaseCredentials();
+
+  // Bind the push notification route
+  const pushNotificationsRouter = require('./routes/pushNotifications');
+  app.use('/push-notifications', pushNotificationsRouter);
+
+  // Start the server by listening
+  app.listen(PORT, () => console.log(`Native Homer backend app listening on port ${PORT}`));
+}
+
+startServer();
 
 module.exports = app;

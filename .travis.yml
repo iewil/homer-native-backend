@@ -22,8 +22,19 @@ deploy:
     app: "homer-native-backend"
     env: "homer-native-backend-staging"
     bucket_name: "homer-native-backend-staging"
-    edge: 
-      branch: master
+    wait_until_deployed: true
+    wait_until_deployed_timeout: 1000 # seconds
+    on:
+      branch: develop
+  - provider: elasticbeanstalk
+    access_key_id: $AWS_ACCESS_KEY_ID_FOR_DEPLOYMENT
+    secret_access_key: $AWS_SECRET_ACCESS_KEY_FOR_DEPLOYMENT
+    region: "ap-southeast-1"
+    skip_cleanup: true
+    zip_file: $ELASTICBEANSTALK_DEPLOYMENT_ZIP_FILE
+    app: "homer-native-backend"
+    env: "homer-native-backend-prod"
+    bucket_name: "homer-native-backend-prod"
     wait_until_deployed: true
     wait_until_deployed_timeout: 1000 # seconds
     on:

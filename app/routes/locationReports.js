@@ -1,38 +1,79 @@
 // Imports
-const express = require('express')
-const router = express.Router()
+const express = require('express');
 
-async function getLocationReports (req, res) {
-  const { order_id: orderId } = req.params
+const router = express.Router();
+
+// Middlewares
+const Ajv = require('ajv');
+
+// Services
+const { LocationReportService } = require('../services/LocationReportService');
+
+// Validators
+const ajv = new Ajv();
+const { getLocationReportsSchema, createLocationReportSchema } = require('../validators/locationReports');
+
+// Errors
+const { DbError } = require('../errors/DbErrors');
+const { UnauthorisedActionError } = require('../errors/AuthErrors');
+const { InputSchemaValidationError } = require('../errors/InputValidationErrors');
+
+async function getLocationReports(req, res) {
   try {
-    // TO-DO
+    // 1. Validate request
+    const validRequest = ajv.validate(getLocationReportsSchema, req);
+    if (!validRequest) throw new InputSchemaValidationError(JSON.stringify(ajv.errors));
 
-    let locationReports
-    res.status(200).send({ locationReports })
+    const { order_id: orderId } = req.params;
+
+    if ((req.orderId && req.orderId === orderId) || req.role === 'admin') {
+      // 2. Find all locationReport objects that have the specified orderId
+      let locationReportsForOrder;
+      try {
+        locationReportsForOrder = await LocationReportService.getAllLocationsForOrder(orderId);
+        console.log(`Successfully obtained location reports for orderId: ${orderId}`);
+      } catch (err) {
+        throw new DbError(err);
+      }
+
+      const { locationReports } = locationReportsForOrder;
+      res.status(200).send({ location_reports: locationReports });
+    } else {
+      throw new UnauthorisedActionError('get location reports', orderId)
+    }
   } catch (err) {
-    res.status(500).send(err.message)
+    console.error(`GET /location-reports failed with err: ${err}`);
+    res.status(500).send(err.message);
   }
-};
+}
 
-async function createLocationReport (req, res) {
- 
-  // TO-DO: Verify JWT
-
-  const { 
-    latitude,
-    longitude,
-    metadata
-  } = req.body
-
+async function createLocationReport(req, res) {
   try {
-    // TO-DO
-    res.status(200).send('Ok')
-  } catch (err) {
-    res.status(500).send(err.message)
-  }
-};
+    // 1. Validate request
+    const validRequest = ajv.validate(createLocationReportSchema, req);
+    if (!validRequest) throw new InputSchemaValidationError(JSON.stringify(ajv.errors));
 
-router.get('/', getLocationReports)
-router.post('/', createLocationReport)
+    const { latitude, longitude, metadata } = req.body;
+    const { orderId } = req; // Obtained from JWT in the auth middleware
+
+    // 2. Store locationReport in the DB
+    const locationReport = {
+      order_id: orderId,
+      latitude,
+      longitude,
+      metadata,
+    };
+    await LocationReportService.addLocationReport(locationReport);
+    console.log(`Successfully created location report: ${locationReport}`);
+
+    res.status(200).send('Ok');
+  } catch (err) {
+    console.error(`POST /location-reports failed with err: ${err}`);
+    res.status(500).send(err.message);
+  }
+}
+
+router.get('/:order_id', getLocationReports);
+router.post('/', createLocationReport);
 
 module.exports = router;
