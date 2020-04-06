@@ -62,7 +62,8 @@ async function obtainS3UploadLink(req, res) {
       presigned_url: preSignedUrl,
     });
   } catch (err) {
-    res.status(500).send(err.message);
+    console.error(err.status ? `GET /photos/presigned-url failed with err: ${JSON.stringify(err)}` : `GET /photos/presigned-url unhandled server error: ${JSON.stringify(err)}`);
+    return res.status(err.status ? err.status : 500).send(`${err.name}: ${err.message}`);
   }
 }
 

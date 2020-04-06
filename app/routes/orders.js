@@ -18,27 +18,28 @@ const { createQuarantineOrdersSchema, getQuarantineOrdersSchema, updateQuarantin
 // Errors
 const { InputSchemaValidationError } = require('../errors/InputValidationErrors')
 
-async function getAllOrders (req, res) {
+async function getAllOrders(req, res) {
   try {
     const results = await QuarantineOrderService.getAllOrders()
 
-    const orders = results.map(order => {
+    const orders = results.map((order) => {
       return {
         orderId: order.id,
         contactNumber: order.contact_number,
         startDate: moment(order.start_date).format(),
         endDate: moment(order.end_date).format(),
-      }
-    })
-    res.status(200).send({ orders })
+      };
+    });
+    return res.status(200).send({ orders });
   } catch (err) {
-    res.status(500).send(err.message)
+    console.error(err.status ? `GET /orders failed with err: ${JSON.stringify(err)}` : `GET /orders unhandled server error: ${JSON.stringify(err)}`);
+    return res.status(err.status ? err.status : 500).send(`${err.name}: ${err.message}`);
   }
-};
+}
 
-async function getOrder (req, res) {
+async function getOrder(req, res) {
   try {
-    let validRequest = ajv.validate(getQuarantineOrdersSchema, req)
+    const validRequest = ajv.validate(getQuarantineOrdersSchema, req)
     if (!validRequest) throw new InputSchemaValidationError(JSON.stringify(ajv.errors))
 
     const { contact_number: contactNumber } = req.params
@@ -53,7 +54,8 @@ async function getOrder (req, res) {
     }
     res.status(200).send(order)
   } catch (err) {
-    res.status(500).send(err.message)
+    console.error(err.status ? `GET /orders/:contact_number failed with err: ${JSON.stringify(err)}` : `GET /orders/:contact_number unhandled server error: ${JSON.stringify(err)}`);
+    return res.status(err.status ? err.status : 500).send(`${err.name}: ${err.message}`);
   }
 };
 
@@ -91,7 +93,8 @@ async function createQuarantineOrder (req, res) {
 
     res.status(200).send(result)
   } catch (err) {
-    res.status(500).send(err.message)
+    console.error(err.status ? `POST /orders failed with err: ${JSON.stringify(err)}` : `POST /orders unhandled server error: ${JSON.stringify(err)}`);
+    return res.status(err.status ? err.status : 500).send(`${err.name}: ${err.message}`);
   }
 };
 
@@ -132,7 +135,8 @@ async function updateOrder (req, res) {
     const updated = await QuarantineOrderService.updateOrder(orderId, updatedOrder)
     res.status(200).send(updated)
   } catch (err) {
-    res.status(500).send(err.message)
+    console.error(err.status ? `PUT /orders/:order_id failed with err: ${JSON.stringify(err)}` : `PUT /orders/:order_id unhandled server error: ${JSON.stringify(err)}`);
+    return res.status(err.status ? err.status : 500).send(`${err.name}: ${err.message}`);
   }
 };
 
@@ -146,7 +150,8 @@ async function invalidateOrder (req, res) {
     const updated = await QuarantineOrderService.invalidateOrder(orderId)
     res.status(200).send(updated)
   } catch (err) {
-    res.status(500).send(err.message)
+    console.error(err.status ? `PUT /orders/invalidate/:order_id failed with err: ${JSON.stringify(err)}` : `PUT /orders/invalidate/:order_id unhandled server error: ${JSON.stringify(err)}`);
+    return res.status(err.status ? err.status : 500).send(`${err.name}: ${err.message}`);
   }
 };
 

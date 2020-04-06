@@ -42,8 +42,8 @@ async function getLocationReports(req, res) {
       throw new UnauthorisedActionError('get location reports', orderId)
     }
   } catch (err) {
-    console.error(`GET /location-reports failed with err: ${err}`);
-    res.status(500).send(err.message);
+    console.error(err.status ? `GET /location-reports/:order_id failed with err: ${JSON.stringify(err)}` : `GET /location-reports/:order_id unhandled server error: ${JSON.stringify(err)}`);
+    return res.status(err.status ? err.status : 500).send(`${err.name}: ${err.message}`);
   }
 }
 
@@ -66,10 +66,10 @@ async function createLocationReport(req, res) {
     await LocationReportService.addLocationReport(locationReport);
     console.log(`Successfully created location report: ${locationReport}`);
 
-    res.status(200).send('Ok');
+    return res.status(200).send('Ok');
   } catch (err) {
-    console.error(`POST /location-reports failed with err: ${err}`);
-    res.status(500).send(err.message);
+    console.error(err.status ? `POST /location-reports failed with err: ${JSON.stringify(err)}` : `POST /location-reports unhandled server error: ${JSON.stringify(err)}`);
+    return res.status(err.status ? err.status : 500).send(`${err.name}: ${err.message}`);
   }
 }
 
