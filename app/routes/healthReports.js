@@ -5,7 +5,6 @@ const router = express.Router();
 
 // Middlewares
 const Ajv = require('ajv');
-const { verifyJwt } = require('../middlewares/auth');
 
 // Services
 const { HealthReportService } = require('../services/HealthReportService');
@@ -16,6 +15,7 @@ const { getHealthReportsSchema, createHealthReportSchema } = require('../validat
 
 // Errors
 const { DbError } = require('../errors/DbErrors');
+const { UnauthorisedActionError } = require('../errors/AuthErrors');
 const { InputSchemaValidationError } = require('../errors/InputValidationErrors');
 
 async function getHealthReports(req, res) {
@@ -26,17 +26,21 @@ async function getHealthReports(req, res) {
 
     const { order_id: orderId } = req.params;
 
-    // 2. Find all locationReport objects that have the specified orderId
-    let healthReportsForOrder;
-    try {
-      healthReportsForOrder = await HealthReportService.getAllHealthReports(orderId);
-      console.log(`Successfully obtained health reports for orderId: ${orderId}`);
-    } catch (err) {
-      throw new DbError(err);
-    }
+    if ((req.orderId && req.orderId === orderId) || req.role === 'admin') {
+      // 2. Find all locationReport objects that have the specified orderId
+      let healthReportsForOrder;
+      try {
+        healthReportsForOrder = await HealthReportService.getAllHealthReports(orderId);
+        console.log(`Successfully obtained health reports for orderId: ${orderId}`);
+      } catch (err) {
+        throw new DbError(err);
+      }
 
-    const { healthReports } = healthReportsForOrder;
-    res.status(200).send({ health_reports: healthReports });
+      const { healthReports } = healthReportsForOrder;
+      res.status(200).send({ health_reports: healthReports });
+    } else {
+      throw new UnauthorisedActionError('get health reports', orderId)
+    }
   } catch (err) {
     console.error(`GET /health-reports failed with err: ${err}`);
     res.status(500).send(err.message);
@@ -87,6 +91,6 @@ async function createHealthReport(req, res) {
 }
 
 router.get('/:order_id', getHealthReports);
-router.post('/', verifyJwt, createHealthReport);
+router.post('/', createHealthReport);
 
 module.exports = router;

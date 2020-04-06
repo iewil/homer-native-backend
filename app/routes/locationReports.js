@@ -5,7 +5,6 @@ const router = express.Router();
 
 // Middlewares
 const Ajv = require('ajv');
-const { verifyJwt } = require('../middlewares/auth');
 
 // Services
 const { LocationReportService } = require('../services/LocationReportService');
@@ -16,6 +15,7 @@ const { getLocationReportsSchema, createLocationReportSchema } = require('../val
 
 // Errors
 const { DbError } = require('../errors/DbErrors');
+const { UnauthorisedActionError } = require('../errors/AuthErrors');
 const { InputSchemaValidationError } = require('../errors/InputValidationErrors');
 
 async function getLocationReports(req, res) {
@@ -26,17 +26,21 @@ async function getLocationReports(req, res) {
 
     const { order_id: orderId } = req.params;
 
-    // 2. Find all locationReport objects that have the specified orderId
-    let locationReportsForOrder;
-    try {
-      locationReportsForOrder = await LocationReportService.getAllLocationsForOrder(orderId);
-      console.log(`Successfully obtained location reports for orderId: ${orderId}`);
-    } catch (err) {
-      throw new DbError(err);
-    }
+    if ((req.orderId && req.orderId === orderId) || req.role === 'admin') {
+      // 2. Find all locationReport objects that have the specified orderId
+      let locationReportsForOrder;
+      try {
+        locationReportsForOrder = await LocationReportService.getAllLocationsForOrder(orderId);
+        console.log(`Successfully obtained location reports for orderId: ${orderId}`);
+      } catch (err) {
+        throw new DbError(err);
+      }
 
-    const { locationReports } = locationReportsForOrder;
-    res.status(200).send({ location_reports: locationReports });
+      const { locationReports } = locationReportsForOrder;
+      res.status(200).send({ location_reports: locationReports });
+    } else {
+      throw new UnauthorisedActionError('get location reports', orderId)
+    }
   } catch (err) {
     console.error(`GET /location-reports failed with err: ${err}`);
     res.status(500).send(err.message);
@@ -70,6 +74,6 @@ async function createLocationReport(req, res) {
 }
 
 router.get('/:order_id', getLocationReports);
-router.post('/', verifyJwt, createLocationReport);
+router.post('/', createLocationReport);
 
 module.exports = router;

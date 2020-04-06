@@ -5,6 +5,7 @@ const { PORT } = process.env;
 const env = process.env.NODE_ENV ? process.env.NODE_ENV : 'development'
 
 const db = require('./src/models')
+const { verifyJwt } = require('./middlewares/auth')
 
 const app = express();
 app.use(express.json());
@@ -55,12 +56,16 @@ app.use(cors({
   credentials: true,
 }));
 
+app.use('/otp', otpRouter);
+
+// Auth middleware
+app.use(verifyJwt);
+
 // Protected routes
 app.use('/health-reports', healthReportsRouter);
 app.use('/location-reports', locationReportsRouter);
 app.use('/push-notifications', pushNotificationsRouter);
 app.use('/orders', ordersRouter);
-app.use('/otp', otpRouter);
 app.use('/photos', photosRouter);
 
 db.sequelize.sync().then(() => {

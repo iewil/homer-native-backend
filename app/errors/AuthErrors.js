@@ -6,6 +6,13 @@ class InvalidAdminUserError extends ApplicationError {
   }
 }
 
+class UnauthorisedActionError extends ApplicationError {
+  constructor(action, resource) {
+    super(`This user is not allowed to ${action} for ${resource}`, 401);
+  }
+}
+
 module.exports = {
   InvalidAdminUserError,
+  UnauthorisedActionError
 };
