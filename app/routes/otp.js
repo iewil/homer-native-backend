@@ -8,9 +8,6 @@ const Ajv = require('ajv');
 // Setup services
 const ajv = new Ajv();
 const router = express.Router();
-const OtpService = require('../services/OtpService');
-const QuarantineOrderService = require('../services/QuarantineOrderService');
-const AdminUserService = require('../services/AdminUserService');
 
 // Errors
 const {
@@ -41,6 +38,21 @@ const ADMIN_USER_TOKEN_EXPIRY = 7; // 1 week in number of days
 // ([a-z.]+).gov.sg$ checks that the domain ends with .gov.sg and only contains lower case alphabets
 // and dot characters
 const GOV_SG_EMAIL_REGEX = /(?!.*\.\.)(?!.*_from\.)^([a-z0-9._]+)@([a-z.]+).gov.sg$/;
+const {
+  ALPHA_SENDER_ID,
+  MESSAGING_SERVICE_SID,
+  TWILIO_ACCOUNT_SID,
+  TWILIO_AUTH_TOKEN,
+} = process.env;
+
+// Twilio
+const twilioClient = require('twilio')(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
+
+// Services
+const OtpService = require('../services/OtpService');
+const QuarantineOrderService = require('../services/QuarantineOrderService');
+const AdminUserService = require('../services/AdminUserService');
+
 
 const validateEmail = async (email) => {
   const result = email.match(GOV_SG_EMAIL_REGEX);
@@ -116,8 +128,16 @@ async function generateOtp(req, res) {
     await OtpService.saveOtp(newOTP);
 
     if (email) await sendOtpEmail(email, otp);
+    if (contactNumber) {
+      await twilioClient.messages.create({
+        body: `Your Homer OTP is ${otp}`,
+        messagingServiceSid: MESSAGING_SERVICE_SID,
+        from: ALPHA_SENDER_ID,
+        to: `+${contact}`,
+      });
+    }
 
-    res.status(200).send({ message: 'OTP created' });
+    res.status(200).send({ message: 'OTP created and sent' });
   } catch (err) {
     res.status(500).send(err.message);
   }
