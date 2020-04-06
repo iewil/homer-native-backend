@@ -2,7 +2,11 @@ module.exports = (sequelize, DataTypes) => {
   const Otp = sequelize.define('Otp', {
     contact_number: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: true
+    },
+    email: {
+      type: DataTypes.STRING,
+      allowNull: true
     },
     otp: {
       type: DataTypes.STRING,
