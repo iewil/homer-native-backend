@@ -139,7 +139,8 @@ async function generateOtp(req, res) {
 
     res.status(200).send({ message: 'OTP created and sent' });
   } catch (err) {
-    res.status(500).send(err.message);
+    console.error(err.status ? `POST /otp/generate failed with err: ${JSON.stringify(err)}` : `POST /otp/generate unhandled server error: ${JSON.stringify(err)}`);
+    return res.status(err.status ? err.status : 500).send(`${err.name}: ${err.message}`);
   }
 }
 
@@ -222,7 +223,8 @@ async function verifyOtp(req, res) {
     const accessToken = jwt.sign(accessTokenParams, TOKEN_SIGNING_KEY);
     res.status(200).send({ access_token: accessToken });
   } catch (err) {
-    res.status(500).send(err.message);
+    console.error(err.status ? `POST /otp/verify failed with err: ${JSON.stringify(err)}` : `POST /otp/verify unhandled server error: ${JSON.stringify(err)}`);
+    return res.status(err.status ? err.status : 500).send(`${err.name}: ${err.message}`);
   }
 }
 

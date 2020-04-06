@@ -39,11 +39,11 @@ async function getHealthReports(req, res) {
       const { healthReports } = healthReportsForOrder;
       res.status(200).send({ health_reports: healthReports });
     } else {
-      throw new UnauthorisedActionError('get health reports', orderId)
+      throw new UnauthorisedActionError('get health reports', orderId);
     }
   } catch (err) {
-    console.error(`GET /health-reports failed with err: ${err}`);
-    res.status(500).send(err.message);
+    console.error(err.status ? `GET /health-reports/:order_id failed with err: ${JSON.stringify(err)}` : `GET /health-reports/:order_id unhandled server error: ${JSON.stringify(err)}`);
+    return res.status(err.status ? err.status : 500).send(`${err.name}: ${err.message}`);
   }
 }
 
@@ -83,10 +83,10 @@ async function createHealthReport(req, res) {
       throw new DbError(err);
     }
 
-    res.status(200).send('Ok');
+    return res.status(200).send('Ok');
   } catch (err) {
-    console.error(`POST /health-reports failed with err: ${err}`);
-    res.status(500).send(err.message);
+    console.error(err.status ? `POST /health-reports failed with err: ${JSON.stringify(err)}` : `POST /health-reports unhandled server error: ${JSON.stringify(err)}`);
+    return res.status(err.status ? err.status : 500).send(`${err.name}: ${err.message}`);
   }
 }
 
