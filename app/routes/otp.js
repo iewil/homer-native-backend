@@ -44,6 +44,10 @@ const {
   TWILIO_ACCOUNT_SID,
   TWILIO_AUTH_TOKEN,
 } = process.env;
+const WHITELIST_CONTACT = {
+  contactNumber: '6590374625',
+  otp: '111111'
+}
 
 // Twilio
 const twilioClient = require('twilio')(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
@@ -104,6 +108,11 @@ async function generateOtp(req, res) {
       await validateEmail(email);
     } else {
       throw new OtpGenerationMalformedRequestError();
+    }
+
+    // Whitelist contact for App Store review
+    if (contactNumber && contactNumber === WHITELIST_CONTACT.contactNumber) {
+      return res.status(200).send({ message: 'Please use the default OTP provided to you' });
     }
 
     // 2. Generate OTP
@@ -183,11 +192,19 @@ async function verifyOtp(req, res) {
       throw new OtpGenerationMalformedRequestError();
     }
 
-    // 2. Retrieve the OTP
-    const retrievedOtp = await OtpService.getOtp(contactNumber, email);
-    if (!bcrypt.compareSync(otp, retrievedOtp)) {
-      res.status(401).send('Invalid OTP');
-      return;
+    if (contactNumber && contactNumber === WHITELIST_CONTACT.contactNumber) {
+      // 2a. Check for whitelisted number and OTP combination
+      if (otp !== WHITELIST_CONTACT.otp) {
+        res.status(401).send('Invalid OTP');
+        return;
+      }
+    } else {
+      // 2b. Retrieve the OTP
+      const retrievedOtp = await OtpService.getOtp(contactNumber, email);
+      if (!bcrypt.compareSync(otp, retrievedOtp)) {
+        res.status(401).send('Invalid OTP');
+        return;
+      }
     }
 
     const contact = email || contactNumber;

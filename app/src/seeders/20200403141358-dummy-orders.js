@@ -2,12 +2,12 @@ module.exports = {
   up: async (queryInterface, Sequelize) => {
     const currentDatetime = new Date()
     let quarantineEnd = new Date()
-    quarantineEnd.setDate(quarantineEnd.getDate() + 14)
+    quarantineEnd.setDate(quarantineEnd.getDate() + 90)
 
     await queryInterface.bulkInsert('QuarantineOrders', [
       {
         id: 'qo_a5c5361c-f996-4a2d-b159-9e810d5f30e7',
-        contact_number: '6598203847',
+        contact_number: '6591720530',
         start_date: currentDatetime,
         end_date: quarantineEnd,
         photo_s3_key: null,
@@ -16,7 +16,7 @@ module.exports = {
       },
       {
         id: 'qo_27b8b12b-1a87-402a-a8bf-b3a2e0058e64',
-        contact_number: '6587362910',
+        contact_number: '6591892037',
         start_date: currentDatetime,
         end_date: quarantineEnd,
         photo_s3_key: null,
@@ -25,7 +25,7 @@ module.exports = {
       },
       {
         id: 'qo_3ab76179-9c4e-4e99-88de-dee27dd863c1',
-        contact_number: '6590374625',
+        contact_number: '6588298797',
         start_date: currentDatetime,
         end_date: quarantineEnd,
         photo_s3_key: null,
@@ -34,7 +34,7 @@ module.exports = {
       },
       {
         id: 'qo_e15077ea-e7e3-49d9-ab2b-b9ad0c9aa719',
-        contact_number: '6592638291',
+        contact_number: '6594559202',
         start_date: currentDatetime,
         end_date: quarantineEnd,
         photo_s3_key: null,
@@ -43,7 +43,7 @@ module.exports = {
       },
       {
         id: 'qo_753769f4-0e10-4bae-9f4d-57617409a695',
-        contact_number: '6582743629',
+        contact_number: '6581884602',
         start_date: currentDatetime,
         end_date: quarantineEnd,
         photo_s3_key: null,

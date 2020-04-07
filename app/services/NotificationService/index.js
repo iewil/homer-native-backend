@@ -29,7 +29,7 @@ const ACTION = {
 };
 
 // Android app package name
-const ANDROID_PACKAGE_NAME = 'sg.parking.streetsmart';
+const ANDROID_PACKAGE_NAME = 'sg.gov.homer';
 
 // https://firebase.google.com/docs/reference/admin/node/TokenMessage.html
 // This is a TokenMessage set with our defaults
@@ -67,7 +67,7 @@ async function getPushNotificationForOrderId(orderId) {
 async function registerForPushNotification(orderId, pushNotificationId, platform) {
   try {
     // Get exiting push notification
-    const pn = await db.PushNotifications.findOne({ order_id: orderId });
+    const pn = await db.PushNotifications.findOne({ where: { order_id: orderId } });
 
     if (pn) {
       // Update push notification
