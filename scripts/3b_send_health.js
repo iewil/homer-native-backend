@@ -50,7 +50,6 @@ async function main ({ firebaseCredentialFilePath, twilioId, twilioToken, twilio
     pns,
     pn => {
       console.log(`sending pn for ${pn.qo}`)
-      console.log({...PN_MESSAGE, token: pn.pn })
       return fcm
         .send({...PN_MESSAGE, token: pn.pn })
         .catch(e => console.log(`error while sending : ${e.name}`))
