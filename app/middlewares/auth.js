@@ -49,7 +49,7 @@ function verifyJwt (req, res, next) {
       return res.status(401).send('Token expired');
     }
     if (err instanceof jwt.JsonWebTokenError) {
-      return res.status(401).send('Malformed JWT');
+      return res.status(401).send(`Unauthorized. ${err.message}`);
     }
     if (err instanceof InvalidAdminUserError) {
       return res.status(err.status).send(err.message);
