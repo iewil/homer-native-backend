@@ -29,7 +29,7 @@ const PN_MESSAGE = {
   },
 }
 
-const SMS_MESSAGE = 'Please submit your health report on the Homer App'
+const SMS_MESSAGE = 'Please submit your health report now on the Homer App, to update your temperature and symptoms (if any).'
 
 async function main ({ firebaseCredentialFilePath, twilioId, twilioToken, twilioAlphaSender, twilioMessagingServiceId, pushNotificationFilePath, smsFilePath }) {
 
