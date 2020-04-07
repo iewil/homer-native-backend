@@ -24,7 +24,7 @@ const { InputSchemaValidationError } = require('../errors/InputValidationErrors'
 
 async function handleRegister(request, response) {
   try {
-    console.log('request to register push notification', request.body);
+    console.log('request to register push notification', request.body, request.orderId);
 
     // get body of POST request
     const { body, orderId } = request;
