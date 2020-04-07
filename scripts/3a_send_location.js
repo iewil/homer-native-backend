@@ -29,7 +29,7 @@ const PN_MESSAGE = {
   },
 }
 
-const SMS_MESSAGE = 'Please submit your location on the Homer App'
+const SMS_MESSAGE = 'Please launch the Homer App now for us to automatically confirm your current location. You will not need to do anything else.'
 
 async function main ({ firebaseCredentialFilePath, twilioId, twilioToken, twilioAlphaSender, twilioMessagingServiceId, pushNotificationFilePath, smsFilePath }) {
 
