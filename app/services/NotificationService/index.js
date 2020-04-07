@@ -29,7 +29,7 @@ const ACTION = {
 };
 
 // Android app package name
-const ANDROID_PACKAGE_NAME = 'sg.parking.streetsmart';
+const ANDROID_PACKAGE_NAME = 'sg.gov.homer';
 
 // https://firebase.google.com/docs/reference/admin/node/TokenMessage.html
 // This is a TokenMessage set with our defaults
